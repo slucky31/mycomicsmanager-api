@@ -22,13 +22,13 @@ jobs:
                 dotnet-version: 5.0.100
         - 
             name: MyComicsManagerApi Install dependencies
-            run: dotnet restore
+            run: dotnet restore "./MyComicsManagerApi.csproj"
         - 
             name: MyComicsManagerApi Build
-            run: dotnet build --configuration Release --no-restore
+            run: dotnet build "./MyComicsManagerApi.csproj" --configuration Release --no-restore
         - 
             name: MyComicsManagerApi Test
-            run: dotnet test --no-restore --verbosity normal
+            run: dotnet test "./MyComicsManagerApi.csproj" --no-restore --verbosity normal
 
   
             
