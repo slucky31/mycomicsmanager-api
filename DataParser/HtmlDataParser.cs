@@ -10,7 +10,7 @@ using Serilog;
 using HtmlAgilityPack;
 
 
-namespace MyComicsManagerApi.ComicDataParser
+namespace MyComicsManagerApi.DataParser
 {
     public class HtmlDataParser
     {
@@ -28,21 +28,18 @@ namespace MyComicsManagerApi.ComicDataParser
             Doc = Web.Load(url);
         }
 
-        public String ExtractTextValue(string htmlPath)
+        public string ExtractTextValue(string htmlPath)
         {
             var selectedNode = Doc.DocumentNode.SelectSingleNode(htmlPath);
             if (selectedNode != null)
             {
                 return selectedNode.InnerText.Trim();
             }
-            else
-            {
-                return "";
-            }
+            return null;
                        
         }
 
-        public String ExtractTextValueAndSplitOnSeparator(string htmlPath, string separator, int id)
+        public string ExtractTextValueAndSplitOnSeparator(string htmlPath, string separator, int id)
         {
             var extractedText = ExtractTextValue(htmlPath);
             string splitExtractedText = extractedText;
@@ -53,17 +50,14 @@ namespace MyComicsManagerApi.ComicDataParser
             return splitExtractedText;
         }
 
-        public String ExtractAttributValue(string htmlPath, string attribut)
+        public string ExtractAttributValue(string htmlPath, string attribut)
         {
             var selectedNode = Doc.DocumentNode.SelectSingleNode(htmlPath);
             if (selectedNode != null)
             {
                 return selectedNode.Attributes[attribut].Value.Trim();
             } 
-            else
-            {
-                return null;
-            }
+            return null;            
         }
 
     }
