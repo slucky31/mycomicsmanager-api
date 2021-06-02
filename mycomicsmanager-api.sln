@@ -3,7 +3,25 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31205.134
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyComicsManagerApi", "MyComicsManagerApi.csproj", "{00D0D09C-71ED-4E55-B313-B354136D4D04}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyComicsManagerApiTests", "MyComicsManagerApi.Tests\MyComicsManagerApiTests.csproj", "{2167C831-61F4-4BE2-AACD-56F4C695217D}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{00D0D09C-71ED-4E55-B313-B354136D4D04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00D0D09C-71ED-4E55-B313-B354136D4D04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00D0D09C-71ED-4E55-B313-B354136D4D04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00D0D09C-71ED-4E55-B313-B354136D4D04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2167C831-61F4-4BE2-AACD-56F4C695217D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2167C831-61F4-4BE2-AACD-56F4C695217D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2167C831-61F4-4BE2-AACD-56F4C695217D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2167C831-61F4-4BE2-AACD-56F4C695217D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
