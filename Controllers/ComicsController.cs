@@ -64,8 +64,8 @@ namespace MyComicsManagerApi.Controllers
             return NoContent();
         }
 
-        [HttpPut("searchcomicinfo/{id:length(24)}")]
-        public IActionResult SearchComicInfo(string id)
+        [HttpGet("searchcomicinfo/{id:length(24)}")]
+        public ActionResult<Comic> SearchComicInfo(string id)
         {
             var comic = _comicService.Get(id);
 
@@ -76,7 +76,7 @@ namespace MyComicsManagerApi.Controllers
 
             _comicService.SearchComicInfoAndUpdate(comic);
 
-            return NoContent();
+            return _comicService.Get(id);
         }
 
         [HttpDelete("{id:length(24)}")]

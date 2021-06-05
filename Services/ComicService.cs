@@ -131,6 +131,7 @@ namespace MyComicsManagerApi.Services
                 comic.Title = results[ComicDataEnum.TITRE];
                 comic.Volume = results[ComicDataEnum.TOME];
                 comic.Writer = results[ComicDataEnum.SCENARISTE];
+                comic.FicheUrl = results[ComicDataEnum.URL];
                 /* TODO : Liste des champs restants à gérer
                 comic.Category;
                 comic.Colorist;
