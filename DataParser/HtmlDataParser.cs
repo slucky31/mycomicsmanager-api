@@ -16,7 +16,7 @@ namespace MyComicsManagerApi.DataParser
     {
         private HtmlWeb Web { get; set; }
 
-        private HtmlDocument Doc { get; set; }
+        protected HtmlDocument Doc { get; set; }
 
         public HtmlDataParser()
         {
@@ -26,6 +26,11 @@ namespace MyComicsManagerApi.DataParser
         public void LoadDocument(string url)
         {
             Doc = Web.Load(url);
+        }
+
+        public HtmlNode ExtractSingleNode(string htmlPath)
+        {
+            return Doc.DocumentNode.SelectSingleNode(htmlPath);          
         }
 
         public string ExtractTextValue(string htmlPath)

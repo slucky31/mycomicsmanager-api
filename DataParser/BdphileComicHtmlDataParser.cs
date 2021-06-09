@@ -14,25 +14,37 @@ namespace MyComicsManagerApi.DataParser
 
         private bool IsOneShot { get; set; } = false;
 
+        private Dictionary<string, string> ExtractedInfo { get; set; }
+        
+        public BdphileComicHtmlDataParser()
+        {
+            ExtractedInfo = new Dictionary<string, string>();
+        }
+
+        protected override string ExtractColoriste()
+        {
+            return ExtractedInfo.GetValueOrDefault("Couleurs", "").Trim();
+        }
+
         protected override string ExtractDateParution()
         {
             // TODO : A convertir dans un format exploitable
-            return ExtractTextValue("/html/body/div[1]/section[1]/div/div[2]/div/div/dl/dd[4]");
+            return ExtractedInfo.GetValueOrDefault("Date de publication","");
         }
 
         protected override string ExtractDessinateur()
         {
-            return ExtractTextValue("/html/body/div[1]/section[1]/div/div[2]/div/div/dl/dd[2]/a");            
+            return ExtractedInfo.GetValueOrDefault("Dessin", "").Trim();
         }
 
         protected override string ExtractEditeur()
         {
-            return ExtractTextValue("/html/body/div[1]/section[1]/div/div[2]/div/div/dl/dd[3]/a");
+            return ExtractedInfo.GetValueOrDefault("Éditeur", "").Trim();
         }
 
         protected override string ExtractISBN()
         {
-            return ExtractTextValue("/html/body/div[1]/section[1]/div/div[2]/div/div/dl/dd[8]");
+            return ExtractedInfo.GetValueOrDefault("EAN", "").Trim();
         }
 
         protected override string ExtractNote()
@@ -47,7 +59,7 @@ namespace MyComicsManagerApi.DataParser
 
         protected override string ExtractScenariste()
         {
-            return ExtractTextValue("/html/body/div[1]/section[1]/div/div[2]/div/div/dl/dd[1]/a");
+            return ExtractedInfo.GetValueOrDefault("Scénario", "").Trim();
         }
 
         protected override string ExtractSerie()
@@ -113,6 +125,30 @@ namespace MyComicsManagerApi.DataParser
             return FicheURL;
         }
 
+        protected void extractDataTable()
+        {
+            ExtractedInfo.Clear();
+
+            var selectedNode = ExtractSingleNode("/html/body/div[1]/section[1]/div/div[2]/div/div/dl");
+
+            // Recherche de toutes les balises <dt>
+            // Pour sélectionner dans le noeud courant ; uiliser .// sinon avec // on repart au début du document
+            // https://stackoverflow.com/questions/10583926/html-agility-pack-selectnodes-from-a-node
+            var dtNodes = selectedNode.SelectNodes(".//dt");
+
+            // Recherche de toutes les balises <dd>
+            // Pour sélectionner dans le noeud courant ; uiliser .// sinon avec // on repart au début du document
+            // https://stackoverflow.com/questions/10583926/html-agility-pack-selectnodes-from-a-node
+            var ddNodes = selectedNode.SelectNodes(".//dd");
+
+            // On stocke le tout dans un dictionnaire
+            for (int i=0; i < dtNodes.Count; i++)
+            {
+                ExtractedInfo.Add(dtNodes[i].InnerText, ddNodes[i].InnerText);
+            }
+        }
+            
+
         protected override void Search(string isbn)
         {
             // Recherche sur BDPhile
@@ -127,6 +163,11 @@ namespace MyComicsManagerApi.DataParser
 
             IsOneShot = "(one-shot)".Equals(ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span[1]"));
 
+            // Récupération du tableau contenant les informations (les éléments sans valeurs ne sont pas affichés)
+            extractDataTable();
+
         }
+
+        
     }
 }
