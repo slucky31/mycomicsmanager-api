@@ -126,15 +126,15 @@ namespace MyComicsManagerApi.Services
                 comic.ISBN = results[ComicDataEnum.ISBN];
                 comic.Penciller = results[ComicDataEnum.DESSINATEUR];
                 // comic.Published = results[ComicDataEnum.DATE_PARUTION]; // TODO : Conversion de date
-                //comic.Review = results[ComicDataEnum.NOTE]; // TODO : Conversion en entier
+                comic.Review = int.Parse(results[ComicDataEnum.NOTE].Split(".")[0]); // TODO : Exception ?
                 comic.Serie = results[ComicDataEnum.SERIE];
                 comic.Title = results[ComicDataEnum.TITRE];
                 comic.Volume = results[ComicDataEnum.TOME];
                 comic.Writer = results[ComicDataEnum.SCENARISTE];
                 comic.FicheUrl = results[ComicDataEnum.URL];
+                comic.Colorist = results[ComicDataEnum.COLORISTE];
                 /* TODO : Liste des champs restants à gérer
-                comic.Category;
-                comic.Colorist;
+                comic.Category;                
                 comic.LanguageISO;
                 comic.PageCount;
                 comic.Price; */

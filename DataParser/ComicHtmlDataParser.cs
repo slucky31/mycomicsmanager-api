@@ -12,6 +12,7 @@ namespace MyComicsManagerApi.DataParser
         SERIE_URL,
         SCENARISTE,
         DESSINATEUR,
+        COLORISTE,
         TOME,
         DATE_PARUTION,
         ISBN,
@@ -20,7 +21,7 @@ namespace MyComicsManagerApi.DataParser
         NOTE,
         FILE,
         ONESHOT,
-        VIGNETTE
+        VIGNETTE       
     }
     
     public abstract class ComicHtmlDataParser : HtmlDataParser
@@ -45,6 +46,7 @@ namespace MyComicsManagerApi.DataParser
             ExtractedData.Add(ComicDataEnum.SERIE_URL, ExtractSerieUrl());
             ExtractedData.Add(ComicDataEnum.SCENARISTE, ExtractScenariste());
             ExtractedData.Add(ComicDataEnum.DESSINATEUR, ExtractDessinateur());
+            ExtractedData.Add(ComicDataEnum.COLORISTE, ExtractColoriste());
             ExtractedData.Add(ComicDataEnum.TOME, ExtractTome());
             ExtractedData.Add(ComicDataEnum.DATE_PARUTION, ExtractDateParution());
             ExtractedData.Add(ComicDataEnum.ISBN, ExtractISBN());
@@ -56,6 +58,7 @@ namespace MyComicsManagerApi.DataParser
             return ExtractedData;
         }
 
+        protected abstract string ExtractColoriste();
         protected abstract string ExtractOneShot();
 
         protected abstract void Search(string isbn);
