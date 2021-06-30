@@ -11,10 +11,12 @@ namespace MyComicsManagerApi.Controllers
     public class ComicsController : ControllerBase
     {
         private readonly ComicService _comicService;
+        private readonly ComicFileService _comicFileService;
 
-        public ComicsController(ComicService comicService)
+        public ComicsController(ComicService comicService, ComicFileService comicFileService)
         {
             _comicService = comicService;
+            _comicFileService = comicFileService;
         }
 
         [HttpGet]
@@ -75,6 +77,22 @@ namespace MyComicsManagerApi.Controllers
             }
 
             _comicService.SearchComicInfoAndUpdate(comic);
+
+            return _comicService.Get(id);
+        }
+
+        [HttpGet("extractcover/{id:length(24)}")]
+        public ActionResult<Comic> SetAndExtractCoverImage(string id)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            _comicFileService.SetAndExtractCoverImage(comic);
+            _comicService.Update(id, comic);
 
             return _comicService.Get(id);
         }
