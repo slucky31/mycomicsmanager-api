@@ -96,7 +96,7 @@ namespace MyComicsManagerApi.DataParser
         {
             if (IsOneShot)
             {
-                return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/a");
+                return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/text()");
             }
             else
             {
