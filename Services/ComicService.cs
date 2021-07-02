@@ -6,6 +6,7 @@ using Serilog;
 using System.IO;
 using System.Threading.Tasks;
 using System;
+using MyComicsManagerApi.DataParser;
 
 namespace MyComicsManagerApi.Services
 {
@@ -108,12 +109,37 @@ namespace MyComicsManagerApi.Services
         }
 
         public void RemoveAllComicsFromLibrary(string libId)
-        {
-            // Suppression du fichier
+        {            
             List<Comic> comics = _comics.Find<Comic>(c => (c.LibraryId == libId)).ToList();
             foreach(Comic c in comics) {
                 Remove(c);
             }
+        }
+
+        public void SearchComicInfoAndUpdate(Comic comic)
+        {
+            if (!String.IsNullOrEmpty(comic.ISBN))
+            {
+                var parser = new BdphileComicHtmlDataParser();
+                var results = parser.Parse(comic.ISBN);
+                comic.Editor = results[ComicDataEnum.EDITEUR];
+                comic.ISBN = results[ComicDataEnum.ISBN];
+                comic.Penciller = results[ComicDataEnum.DESSINATEUR];
+                // comic.Published = results[ComicDataEnum.DATE_PARUTION]; // TODO : Conversion de date
+                comic.Review = int.Parse(results[ComicDataEnum.NOTE].Split(".")[0]); // TODO : Exception ?
+                comic.Serie = results[ComicDataEnum.SERIE];
+                comic.Title = results[ComicDataEnum.TITRE];
+                comic.Volume = results[ComicDataEnum.TOME];
+                comic.Writer = results[ComicDataEnum.SCENARISTE];
+                comic.FicheUrl = results[ComicDataEnum.URL];
+                comic.Colorist = results[ComicDataEnum.COLORISTE];
+                /* TODO : Liste des champs restants à gérer
+                comic.Category;                
+                comic.LanguageISO;
+                comic.PageCount;
+                comic.Price; */
+                Update(comic.Id, comic);
+            }           
         }
 
     }
