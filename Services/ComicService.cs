@@ -49,7 +49,18 @@ namespace MyComicsManagerApi.Services
             string destination = Path.GetFullPath(_libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.FULL_PATH) + comic.EbookName);
             try
             {
-                
+
+                // TODO : Il faut faire qqch dans le cas où le fichier existe déjà dans la librairie !
+                // Changer le nom ?
+                while (File.Exists(destination))
+                {
+                    Log.Error("Le fichier {File} existe déjà", destination);
+                    comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
+                    comic.EbookName = comic.Title + Path.GetExtension(destination);
+                    Log.Error("Il va être renommé en {FileName}", comic.EbookName);
+                    destination = Path.GetFullPath(_libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.FULL_PATH) + comic.EbookName);
+                }
+
                 File.Move(comic.EbookPath, destination);
                 comic.EbookPath = destination;
                 //TODO : Gestion des exceptions
