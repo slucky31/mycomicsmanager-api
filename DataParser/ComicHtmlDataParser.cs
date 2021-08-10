@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -21,12 +18,11 @@ namespace MyComicsManagerApi.DataParser
         NOTE,
         FILE,
         ONESHOT,
-        VIGNETTE       
+        VIGNETTE
     }
-    
+
     public abstract class ComicHtmlDataParser : HtmlDataParser
     {
-  
         private Dictionary<ComicDataEnum, string> ExtractedData { get; set; }
 
         public ComicHtmlDataParser()
@@ -59,6 +55,7 @@ namespace MyComicsManagerApi.DataParser
         }
 
         protected abstract string ExtractColoriste();
+
         protected abstract string ExtractOneShot();
 
         protected abstract void Search(string isbn);

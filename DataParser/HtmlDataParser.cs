@@ -1,14 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
-using AngleSharp.XPath;
-using Serilog;
-using HtmlAgilityPack;
-
+﻿using HtmlAgilityPack;
+using System;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -30,7 +21,7 @@ namespace MyComicsManagerApi.DataParser
 
         public HtmlNode ExtractSingleNode(string htmlPath)
         {
-            return Doc.DocumentNode.SelectSingleNode(htmlPath);          
+            return Doc.DocumentNode.SelectSingleNode(htmlPath);
         }
 
         public string ExtractTextValue(string htmlPath)
@@ -41,7 +32,6 @@ namespace MyComicsManagerApi.DataParser
                 return selectedNode.InnerText.Trim();
             }
             return null;
-                       
         }
 
         public string ExtractTextValueAndSplitOnSeparator(string htmlPath, string separator, int id)
@@ -61,9 +51,8 @@ namespace MyComicsManagerApi.DataParser
             if (selectedNode != null)
             {
                 return selectedNode.Attributes[attribut].Value.Trim();
-            } 
-            return null;            
+            }
+            return null;
         }
-
     }
 }

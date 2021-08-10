@@ -30,9 +30,6 @@ namespace MyComicsManagerApiTests
             results[ComicDataEnum.EDITEUR].Should().Be("Casterman");
             results[ComicDataEnum.NOTE].Should().Be("4.5");
             results[ComicDataEnum.ONESHOT].Should().Be("False");
-
-
-
         }
 
 

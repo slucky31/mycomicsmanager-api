@@ -1,7 +1,5 @@
 ﻿using MyComicsManagerApi.Models;
 using Serilog;
-using SharpCompress.Archives;
-using SharpCompress.Archives.Rar;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
@@ -16,14 +14,12 @@ namespace MyComicsManagerApi.Services
 {
     public class ComicFileService
     {
-
         private readonly LibraryService _libraryService;
 
         public ComicFileService(LibraryService libraryService)
         {
             _libraryService = libraryService;
         }
-
 
         //
         // https://docs.microsoft.com/fr-fr/dotnet/standard/io/how-to-compress-and-extract-files
@@ -69,7 +65,6 @@ namespace MyComicsManagerApi.Services
 
             // Update comic with file
             comic.CoverPath = destinationPath;
-
         }
 
         public void ConvertComicFileToCbz(Comic comic)
@@ -96,7 +91,7 @@ namespace MyComicsManagerApi.Services
 
                 default:
                     // TODO : Faudrait faire qqch la, non ?
-                    Log.Error("L'extension de ce fichier n'est pas pris en compte : {Extension}",extension);
+                    Log.Error("L'extension de ce fichier n'est pas pris en compte : {Extension}", extension);
                     return;
             }
 
@@ -119,7 +114,6 @@ namespace MyComicsManagerApi.Services
             // Mise à jour de l'objet Comic avec le nouveau fichier CBZ
             comic.EbookPath = cbzPath;
             comic.EbookName = Path.GetFileName(cbzPath);
-
         }
 
         private static void ExtractImagesFromPdf(Comic comic, string tempDir)
@@ -140,10 +134,8 @@ namespace MyComicsManagerApi.Services
             }
         }
 
-
         public void ExtractImagesFromCbr(Comic comic, string tempDir)
         {
-
             //using var archive = RarArchive.Open(comic.EbookPath);
             using (Stream stream = File.OpenRead(comic.EbookPath))
             using (var reader = ReaderFactory.Open(stream))
