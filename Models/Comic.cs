@@ -54,5 +54,7 @@ namespace MyComicsManagerApi.Models
 
         public int Review { get; set; }
 
+        public string FicheUrl { get; set; }
+
     }
 }

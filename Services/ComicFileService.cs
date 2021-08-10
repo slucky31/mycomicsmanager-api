@@ -77,9 +77,13 @@ namespace MyComicsManagerApi.Services
             string tempDir = CreateTempDirectory();
 
             // Extartion des images du PDF
-
-            switch (Path.GetExtension(comic.EbookPath))
+            string extension = Path.GetExtension(comic.EbookPath);
+            switch (extension)
             {
+                case ".cbz":
+                    Log.Information("Fichier déjà en CBZ : Pas besoin de conversion !");
+                    return;
+
                 case ".pdf":
                     Log.Information("ExtractImagesFromPdf");
                     ExtractImagesFromPdf(comic, tempDir);
@@ -92,7 +96,7 @@ namespace MyComicsManagerApi.Services
 
                 default:
                     // TODO : Faudrait faire qqch la, non ?
-                    Log.Error("L'extension de ce fichier n'est pas pris en compte.");
+                    Log.Error("L'extension de ce fichier n'est pas pris en compte : {Extension}",extension);
                     return;
             }
 
