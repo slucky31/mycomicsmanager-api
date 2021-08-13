@@ -1,4 +1,5 @@
-﻿using MyComicsManagerApi.Models;
+﻿using MyComicsManagerApi.ComputerVision;
+using MyComicsManagerApi.Models;
 using Serilog;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -7,6 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
@@ -15,10 +18,12 @@ namespace MyComicsManagerApi.Services
     public class ComicFileService
     {
         private readonly LibraryService _libraryService;
+        private readonly ComputerVisionService _computerVisionService;
 
-        public ComicFileService(LibraryService libraryService)
+        public ComicFileService(LibraryService libraryService, ComputerVisionService computerVisionService)
         {
             _libraryService = libraryService;
+            _computerVisionService = computerVisionService;
         }
 
         //
@@ -30,6 +35,14 @@ namespace MyComicsManagerApi.Services
 
             // Normalizes the path.
             string extractPath = Path.GetFullPath(_libraryService.GetCoversDirRootPath());
+
+            // Update comic with file
+            comic.CoverPath = ExtractImageFromCbz(comic, extractPath, 0);
+        }
+
+        private string ExtractImageFromCbz(Comic comic, string extractPath, int imageIndex)
+        {
+            string zipPath = comic.EbookPath;                       
             Log.Information("Les fichiers seront extraits dans {path}", extractPath);
 
             // Ensures that the last character on the extraction path
@@ -40,10 +53,15 @@ namespace MyComicsManagerApi.Services
                 extractPath += Path.DirectorySeparatorChar;
 
             string destinationPath = "";
-
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
             {
-                ZipArchiveEntry entry = archive.Entries.First();
+
+                if (imageIndex < 0 || imageIndex >= archive.Entries.Count)
+                {
+                    throw new ArgumentOutOfRangeException("imageIndex", "imageIndex (" + imageIndex + ") doit être compris entre 0 et " + archive.Entries.Count + ".");
+                }
+
+                ZipArchiveEntry entry = archive.Entries[imageIndex];
                 if (null != entry)
                 {
                     Log.Information("Fichier à extraire {FileName}", entry.FullName);
@@ -63,8 +81,7 @@ namespace MyComicsManagerApi.Services
                 }
             }
 
-            // Update comic with file
-            comic.CoverPath = destinationPath;
+            return destinationPath;
         }
 
         public void ConvertComicFileToCbz(Comic comic)
@@ -153,6 +170,36 @@ namespace MyComicsManagerApi.Services
                     }
                 }
             }
+        }
+
+        public int GetNumberOfImagesInCbz(Comic comic)
+        {
+            string zipPath = comic.EbookPath;            
+            using (ZipArchive archive = ZipFile.OpenRead(zipPath))
+            {
+                return archive.Entries.Count;                
+            }
+        }
+
+        public async void ExtractISBNFromCbz(Comic comic, int imageIndex)
+        {
+            string tempDir = CreateTempDirectory();
+            Log.Information("tempDir : {0}", tempDir);
+
+            string impagePath = ExtractImageFromCbz(comic, tempDir, imageIndex);
+            Log.Information("impagePath : {0}", impagePath);
+
+            string extractedText = await _computerVisionService.ReadTextFromLocalImage(impagePath);
+            Log.Information("extractedText : {0}", extractedText);
+
+            // https://regexlib.com/Search.aspx?k=isbn - Author : Churk
+            string isbnPattern = "(ISBN[-]*(1[03])*[ ]*(: ){0,1})*(([0-9Xx][- ]*){13}|([0-9Xx][- ]*){10})";
+            Regex rgx = new Regex(isbnPattern);
+
+            foreach (Match match in rgx.Matches(extractedText))
+            {
+                Log.Information("Found '{0}' at position {1}", match.Value, match.Index);
+            }            
         }
 
         private static string CreateTempDirectory()

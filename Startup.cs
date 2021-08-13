@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MyComicsManagerApi.ComputerVision;
 using MyComicsManagerApi.Models;
 using MyComicsManagerApi.Services;
 using Serilog;
@@ -36,9 +37,13 @@ namespace MyComicsManagerApi
             services.Configure<LibrairiesSettings>( Configuration.GetSection(nameof(LibrairiesSettings)));
             services.AddSingleton<ILibrairiesSettings>(sp => sp.GetRequiredService<IOptions<LibrairiesSettings>>().Value);
 
+            services.Configure<AzureSettings>(Configuration.GetSection(nameof(AzureSettings)));
+            services.AddSingleton<IAzureSettings>(sp => sp.GetRequiredService<IOptions<AzureSettings>>().Value);
+
             services.AddSingleton<ComicService>();
             services.AddSingleton<LibraryService>();
             services.AddSingleton<ComicFileService>();
+            services.AddSingleton<ComputerVisionService>();
 
             services.AddControllers().AddNewtonsoftJson(options => options.UseMemberCasing());
 

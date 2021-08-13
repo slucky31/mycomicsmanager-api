@@ -96,6 +96,25 @@ namespace MyComicsManagerApi.Controllers
             return _comicService.Get(id);
         }
 
+        [HttpGet("extractisbn/{id:length(24)}")]
+        public ActionResult<Comic> ExtractISBN(string id, int indexImage)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            // TODO : check index image < nb images
+
+            _comicFileService.ExtractISBNFromCbz(comic, indexImage);            
+
+            return _comicService.Get(id);
+        }
+
+
+
         [HttpDelete("{id:length(24)}")]
         public IActionResult Delete(string id)
         {

@@ -5,15 +5,18 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
+using System.Text;
+using MyComicsManagerApi.Models;
 
 namespace MyComicsManagerApi.ComputerVision
 {
     public class ComputerVisionService
     {
+        private readonly IAzureSettings _azureSettings;
 
-
-        public ComputerVisionService()
+        public ComputerVisionService(IAzureSettings azureSettings)
         {
+            _azureSettings = azureSettings;
         }
 
         public ComputerVisionClient Authenticate(string endpoint, string key)
@@ -34,9 +37,7 @@ namespace MyComicsManagerApi.ComputerVision
             // After the request, get the operation location (operation ID)
             string operationLocation = textHeaders.OperationLocation;
             Thread.Sleep(2000);
-            // </snippet_readfileurl_1>
-
-            // <snippet_readfileurl_2>
+ 
             // Retrieve the URI where the extracted text will be stored from the Operation-Location header.
             // We only need the ID and not the full URL
             const int numberOfCharsInOperationId = 36;
@@ -55,17 +56,19 @@ namespace MyComicsManagerApi.ComputerVision
             
             // Display the found text.            
             var textUrlFileResults = results.AnalyzeResult.ReadResults;
+
+            StringBuilder sb = new StringBuilder();
             foreach (ReadResult page in textUrlFileResults)
             {
                 foreach (Line line in page.Lines)
                 {
-                    Log.Debug(line.Text);
+                    sb.Append(line.Text);
                 }
             }
-            return textUrlFileResults.ToString();
+            return sb.ToString();
         }
 
-        public async Task ReadFileLocal(ComputerVisionClient client, string localFile)
+        public async Task<string> ReadFileLocal(ComputerVisionClient client, string localFile)
         {
             Log.Debug("READ FILE FROM LOCAL");
 
@@ -92,16 +95,23 @@ namespace MyComicsManagerApi.ComputerVision
                 results.Status == OperationStatusCodes.NotStarted));
 
             // Display the found text.
-            Console.WriteLine();
+            StringBuilder sb = new StringBuilder();
             var textUrlFileResults = results.AnalyzeResult.ReadResults;
             foreach (ReadResult page in textUrlFileResults)
             {
                 foreach (Line line in page.Lines)
                 {
-                    Log.Debug(line.Text);
+                    sb.Append(line.Text);
                 }
             }
+            return sb.ToString();
 
+        }
+
+        public async Task<string> ReadTextFromLocalImage(string imagePath)
+        {         
+            ComputerVisionClient client = Authenticate(_azureSettings.Endpoint, _azureSettings.Key);
+            return await ReadFileLocal(client, imagePath);
         }
     }
 }
