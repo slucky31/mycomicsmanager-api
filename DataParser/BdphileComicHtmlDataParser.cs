@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -10,12 +7,12 @@ namespace MyComicsManagerApi.DataParser
     {
         private const string BDPHILE_URL = "https://www.bdphile.info/search/album/?q=";
 
-        private string FicheURL {get; set;}
+        private string FicheURL { get; set; }
 
         private bool IsOneShot { get; set; } = false;
 
         private Dictionary<string, string> ExtractedInfo { get; set; }
-        
+
         public BdphileComicHtmlDataParser()
         {
             ExtractedInfo = new Dictionary<string, string>();
@@ -29,7 +26,7 @@ namespace MyComicsManagerApi.DataParser
         protected override string ExtractDateParution()
         {
             // TODO : A convertir dans un format exploitable
-            return ExtractedInfo.GetValueOrDefault("Date de publication","");
+            return ExtractedInfo.GetValueOrDefault("Date de publication", "");
         }
 
         protected override string ExtractDessinateur()
@@ -49,7 +46,7 @@ namespace MyComicsManagerApi.DataParser
 
         protected override string ExtractNote()
         {
-            return ExtractTextValueAndSplitOnSeparator("/html/body/div[1]/section[1]/div/div[3]/div/div[1]","/",0);            
+            return ExtractTextValueAndSplitOnSeparator("/html/body/div[1]/section[1]/div/div[3]/div/div[1]", "/", 0);
         }
 
         protected override string ExtractOneShot()
@@ -71,7 +68,7 @@ namespace MyComicsManagerApi.DataParser
             else
             {
                 return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/a");
-            }            
+            }
         }
 
         protected override string ExtractSerieStatus()
@@ -100,7 +97,7 @@ namespace MyComicsManagerApi.DataParser
             }
             else
             {
-                return ExtractTextValueAndSplitOnSeparator("/html/body/div[1]/section[1]/div/section/h2",":",1);
+                return ExtractTextValueAndSplitOnSeparator("/html/body/div[1]/section[1]/div/section/h2", ":", 1);
             }
         }
 
@@ -113,7 +110,7 @@ namespace MyComicsManagerApi.DataParser
             else
             {
                 var tome = ExtractTextValueAndSplitOnSeparator("/html/body/div[1]/section[1]/div/section/h2", ":", 0);
-                
+
                 // Suppression de tous les caractères sauf les chiffres de 0 à 9
                 Regex regexObj = new Regex(@"[^\d]");
                 return regexObj.Replace(tome, "");
@@ -142,12 +139,11 @@ namespace MyComicsManagerApi.DataParser
             var ddNodes = selectedNode.SelectNodes(".//dd");
 
             // On stocke le tout dans un dictionnaire
-            for (int i=0; i < dtNodes.Count; i++)
+            for (int i = 0; i < dtNodes.Count; i++)
             {
                 ExtractedInfo.Add(dtNodes[i].InnerText, ddNodes[i].InnerText);
             }
         }
-            
 
         protected override void Search(string isbn)
         {
@@ -165,9 +161,6 @@ namespace MyComicsManagerApi.DataParser
 
             // Récupération du tableau contenant les informations (les éléments sans valeurs ne sont pas affichés)
             extractDataTable();
-
         }
-
-        
     }
 }

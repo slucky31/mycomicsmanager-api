@@ -1,8 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using MyComicsManagerApi.Models;
 using MyComicsManagerApi.Services;
-using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
 
 namespace MyComicsManagerApi.Controllers
 {
@@ -38,7 +37,7 @@ namespace MyComicsManagerApi.Controllers
 
         [HttpPost]
         public ActionResult<Comic> Create(Comic comic)
-        {   
+        {
             var createdComic = _comicService.Create(comic);
 
             if (createdComic == null)
@@ -47,7 +46,7 @@ namespace MyComicsManagerApi.Controllers
             }
             else
             {
-               return CreatedAtRoute("GetComic", new { id = comic.Id.ToString() }, comic); 
+                return CreatedAtRoute("GetComic", new { id = comic.Id.ToString() }, comic);
             }
         }
 
@@ -96,6 +95,25 @@ namespace MyComicsManagerApi.Controllers
 
             return _comicService.Get(id);
         }
+
+        [HttpGet("extractisbn/{id:length(24)}")]
+        public ActionResult<Comic> ExtractISBN(string id, int indexImage)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            // TODO : check index image < nb images
+
+            _comicFileService.ExtractISBNFromCbz(comic, indexImage);            
+
+            return _comicService.Get(id);
+        }
+
+
 
         [HttpDelete("{id:length(24)}")]
         public IActionResult Delete(string id)
