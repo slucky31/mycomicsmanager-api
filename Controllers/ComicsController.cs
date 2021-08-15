@@ -96,7 +96,7 @@ namespace MyComicsManagerApi.Controllers
             return _comicService.Get(id);
         }
 
-        [HttpGet("extractisbn/{id:length(24)}")]
+        [HttpGet("extractisbn/{id:length(24)}&{indexImage:int}")]
         public ActionResult<Comic> ExtractISBN(string id, int indexImage)
         {
             var comic = _comicService.Get(id);
