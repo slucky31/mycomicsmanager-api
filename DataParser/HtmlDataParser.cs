@@ -1,22 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
-using AngleSharp.XPath;
-using Serilog;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
+using System;
 
-
-namespace MyComicsManagerApi.ComicDataParser
+namespace MyComicsManagerApi.DataParser
 {
     public class HtmlDataParser
     {
         private HtmlWeb Web { get; set; }
 
-        private HtmlDocument Doc { get; set; }
+        protected HtmlDocument Doc { get; set; }
 
         public HtmlDataParser()
         {
@@ -28,21 +19,22 @@ namespace MyComicsManagerApi.ComicDataParser
             Doc = Web.Load(url);
         }
 
-        public String ExtractTextValue(string htmlPath)
+        public HtmlNode ExtractSingleNode(string htmlPath)
+        {
+            return Doc.DocumentNode.SelectSingleNode(htmlPath);
+        }
+
+        public string ExtractTextValue(string htmlPath)
         {
             var selectedNode = Doc.DocumentNode.SelectSingleNode(htmlPath);
             if (selectedNode != null)
             {
                 return selectedNode.InnerText.Trim();
             }
-            else
-            {
-                return "";
-            }
-                       
+            return null;
         }
 
-        public String ExtractTextValueAndSplitOnSeparator(string htmlPath, string separator, int id)
+        public string ExtractTextValueAndSplitOnSeparator(string htmlPath, string separator, int id)
         {
             var extractedText = ExtractTextValue(htmlPath);
             string splitExtractedText = extractedText;
@@ -53,18 +45,14 @@ namespace MyComicsManagerApi.ComicDataParser
             return splitExtractedText;
         }
 
-        public String ExtractAttributValue(string htmlPath, string attribut)
+        public string ExtractAttributValue(string htmlPath, string attribut)
         {
             var selectedNode = Doc.DocumentNode.SelectSingleNode(htmlPath);
             if (selectedNode != null)
             {
                 return selectedNode.Attributes[attribut].Value.Trim();
-            } 
-            else
-            {
-                return null;
             }
+            return null;
         }
-
     }
 }

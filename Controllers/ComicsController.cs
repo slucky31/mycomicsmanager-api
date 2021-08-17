@@ -1,8 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using MyComicsManagerApi.Models;
 using MyComicsManagerApi.Services;
-using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
 
 namespace MyComicsManagerApi.Controllers
 {
@@ -11,10 +10,12 @@ namespace MyComicsManagerApi.Controllers
     public class ComicsController : ControllerBase
     {
         private readonly ComicService _comicService;
+        private readonly ComicFileService _comicFileService;
 
-        public ComicsController(ComicService comicService)
+        public ComicsController(ComicService comicService, ComicFileService comicFileService)
         {
             _comicService = comicService;
+            _comicFileService = comicFileService;
         }
 
         [HttpGet]
@@ -36,7 +37,7 @@ namespace MyComicsManagerApi.Controllers
 
         [HttpPost]
         public ActionResult<Comic> Create(Comic comic)
-        {   
+        {
             var createdComic = _comicService.Create(comic);
 
             if (createdComic == null)
@@ -45,7 +46,7 @@ namespace MyComicsManagerApi.Controllers
             }
             else
             {
-               return CreatedAtRoute("GetComic", new { id = comic.Id.ToString() }, comic); 
+                return CreatedAtRoute("GetComic", new { id = comic.Id.ToString() }, comic);
             }
         }
 
@@ -63,6 +64,56 @@ namespace MyComicsManagerApi.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("searchcomicinfo/{id:length(24)}")]
+        public ActionResult<Comic> SearchComicInfo(string id)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            _comicService.SearchComicInfoAndUpdate(comic);
+
+            return _comicService.Get(id);
+        }
+
+        [HttpGet("extractcover/{id:length(24)}")]
+        public ActionResult<Comic> SetAndExtractCoverImage(string id)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            _comicFileService.SetAndExtractCoverImage(comic);
+            _comicService.Update(id, comic);
+
+            return _comicService.Get(id);
+        }
+
+        [HttpGet("extractisbn/{id:length(24)}&{indexImage:int}")]
+        public ActionResult<Comic> ExtractISBN(string id, int indexImage)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            // TODO : check index image < nb images
+
+            _comicFileService.ExtractISBNFromCbz(comic, indexImage);            
+
+            return _comicService.Get(id);
+        }
+
+
 
         [HttpDelete("{id:length(24)}")]
         public IActionResult Delete(string id)

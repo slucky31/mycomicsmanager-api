@@ -1,19 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace MyComicsManagerApi.ComicDataParser
+namespace MyComicsManagerApi.DataParser
 {
     public enum ComicDataEnum
     {
         TITRE,
         SERIE,
         SERIE_URL,
-        SCENRAISTE,
+        SCENARISTE,
         DESSINATEUR,
+        COLORISTE,
         TOME,
-        DATEPARUTION,
+        DATE_PARUTION,
         ISBN,
         URL,
         EDITEUR,
@@ -22,13 +20,12 @@ namespace MyComicsManagerApi.ComicDataParser
         ONESHOT,
         VIGNETTE
     }
-    
-    public abstract class ComicDataParser : HtmlDataParser
-    {
-  
-        private Dictionary<ComicDataEnum, string> ExtractedData { get; }
 
-        public ComicDataParser()
+    public abstract class ComicHtmlDataParser : HtmlDataParser
+    {
+        private Dictionary<ComicDataEnum, string> ExtractedData { get; set; }
+
+        public ComicHtmlDataParser()
         {
             ExtractedData = new Dictionary<ComicDataEnum, string>();
         }
@@ -43,10 +40,11 @@ namespace MyComicsManagerApi.ComicDataParser
             ExtractedData.Add(ComicDataEnum.TITRE, ExtractTitre());
             ExtractedData.Add(ComicDataEnum.SERIE, ExtractSerie());
             ExtractedData.Add(ComicDataEnum.SERIE_URL, ExtractSerieUrl());
-            ExtractedData.Add(ComicDataEnum.SCENRAISTE, ExtractScenariste());
+            ExtractedData.Add(ComicDataEnum.SCENARISTE, ExtractScenariste());
             ExtractedData.Add(ComicDataEnum.DESSINATEUR, ExtractDessinateur());
+            ExtractedData.Add(ComicDataEnum.COLORISTE, ExtractColoriste());
             ExtractedData.Add(ComicDataEnum.TOME, ExtractTome());
-            ExtractedData.Add(ComicDataEnum.DATEPARUTION, ExtractDateParution());
+            ExtractedData.Add(ComicDataEnum.DATE_PARUTION, ExtractDateParution());
             ExtractedData.Add(ComicDataEnum.ISBN, ExtractISBN());
             ExtractedData.Add(ComicDataEnum.URL, ExtractURL());
             ExtractedData.Add(ComicDataEnum.EDITEUR, ExtractEditeur());
@@ -55,6 +53,8 @@ namespace MyComicsManagerApi.ComicDataParser
 
             return ExtractedData;
         }
+
+        protected abstract string ExtractColoriste();
 
         protected abstract string ExtractOneShot();
 
