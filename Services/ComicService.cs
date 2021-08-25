@@ -72,6 +72,9 @@ namespace MyComicsManagerApi.Services
                 Log.Error("Destination = {@destination}", destination);
                 return null;
             }
+
+            //Calcul du nombre d'images dans le fcihier CBZ
+            _comicFileService.SetNumberOfImagesInCbz(comic);
             
             // Insertion en base de données
             _comics.InsertOne(comic);
