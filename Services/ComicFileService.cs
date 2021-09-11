@@ -82,7 +82,9 @@ namespace MyComicsManagerApi.Services
             // Without this, a malicious zip file could try to traverse outside of the expected
             // extraction path.
             if (!extractPath.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            { 
                 extractPath += Path.DirectorySeparatorChar;
+            }
 
             string destinationPath = "";
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
@@ -208,7 +210,7 @@ namespace MyComicsManagerApi.Services
 
         public void ExtractImagesFromCbr(Comic comic, string tempDir)
         {
-            //using var archive = RarArchive.Open(comic.EbookPath);
+            
             using (Stream stream = File.OpenRead(comic.EbookPath))
             using (var reader = ReaderFactory.Open(stream))
             {
@@ -217,7 +219,7 @@ namespace MyComicsManagerApi.Services
                     if (!reader.Entry.IsDirectory)
                     {
                         Log.Information("Entry : {0}", reader.Entry.Key);
-                        reader.WriteEntryToDirectory(tempDir, new ExtractionOptions()
+                        reader.WriteEntryToDirectory(tempDir, new ExtractionOptions
                         {
                             ExtractFullPath = true,
                             Overwrite = true
@@ -269,7 +271,9 @@ namespace MyComicsManagerApi.Services
             Log.Information("Créaction du répertoire temporaire : {tempDir}", tempDir);
 
             if (!tempDir.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+            { 
                 tempDir += Path.DirectorySeparatorChar;
+            }
 
             return tempDir;
         }

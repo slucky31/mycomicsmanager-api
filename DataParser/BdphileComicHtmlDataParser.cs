@@ -9,13 +9,14 @@ namespace MyComicsManagerApi.DataParser
 
         private string FicheURL { get; set; }
 
-        private bool IsOneShot { get; set; } = false;
+        private bool IsOneShot { get; set; }
 
         private Dictionary<string, string> ExtractedInfo { get; set; }
 
         public BdphileComicHtmlDataParser()
         {
             ExtractedInfo = new Dictionary<string, string>();
+            IsOneShot = false;
         }
 
         protected override string ExtractColoriste()
