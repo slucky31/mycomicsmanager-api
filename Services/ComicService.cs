@@ -72,6 +72,9 @@ namespace MyComicsManagerApi.Services
                 Log.Error("Destination = {@destination}", destination);
                 return null;
             }
+
+            //Calcul du nombre d'images dans le fcihier CBZ
+            _comicFileService.SetNumberOfImagesInCbz(comic);
             
             // Insertion en base de données
             _comics.InsertOne(comic);
@@ -145,10 +148,10 @@ namespace MyComicsManagerApi.Services
                 comic.FicheUrl = results[ComicDataEnum.URL];
                 comic.Colorist = results[ComicDataEnum.COLORISTE];
                 /* TODO : Liste des champs restants à gérer
-                comic.Category;                
-                comic.LanguageISO;
-                comic.PageCount;
-                comic.Price; */
+                - Category               
+                - LanguageISO
+                - PageCount
+                - Price */
                 Update(comic.Id, comic);
             }           
         }

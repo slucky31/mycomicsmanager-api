@@ -25,7 +25,7 @@ namespace MyComicsManagerApi.DataParser
     {
         private Dictionary<ComicDataEnum, string> ExtractedData { get; set; }
 
-        public ComicHtmlDataParser()
+        protected ComicHtmlDataParser()
         {
             ExtractedData = new Dictionary<ComicDataEnum, string>();
         }

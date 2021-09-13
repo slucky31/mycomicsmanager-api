@@ -111,7 +111,7 @@ namespace MyComicsManagerApi.ComputerVision
         public async Task<string> ReadTextFromLocalImage(string imagePath)
         {         
             ComputerVisionClient client = Authenticate(_azureSettings.Endpoint, _azureSettings.Key);
-            return await ReadFileLocal(client, imagePath);
+            return await ReadFileLocal(client, imagePath).ConfigureAwait(false);
         }
     }
 }

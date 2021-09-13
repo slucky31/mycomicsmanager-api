@@ -20,16 +20,5 @@ namespace MyComicsManagerApiTests
         // https://secure.sogides.com/public/produits/9782/764/026/qu_9782764026540.jpg
 
 
-        [Fact]
-        public async Task ExtractTextValue()
-        {
-            true.Should().BeTrue();
-        }
-
-        [Fact]
-        public async Task ExtractTextValue2()
-        {
-            true.Should().BeTrue();
-        }
     }
 }

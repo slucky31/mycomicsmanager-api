@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyComicsManagerApi.Models;
 using MyComicsManagerApi.Services;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MyComicsManagerApi.Controllers
 {
@@ -97,7 +98,7 @@ namespace MyComicsManagerApi.Controllers
         }
 
         [HttpGet("extractisbn/{id:length(24)}&{indexImage:int}")]
-        public ActionResult<Comic> ExtractISBN(string id, int indexImage)
+        public ActionResult<List<string>> ExtractISBN(string id, int indexImage)
         {
             var comic = _comicService.Get(id);
 
@@ -108,11 +109,35 @@ namespace MyComicsManagerApi.Controllers
 
             // TODO : check index image < nb images
 
-            _comicFileService.ExtractISBNFromCbz(comic, indexImage);            
+            // Evitement de l'utilisation de await / async
+            // https://visualstudiomagazine.com/Blogs/Tool-Tracker/2019/10/calling-methods-async.aspx
+            Task<List<string>> task = _comicFileService.ExtractISBNFromCbz(comic, indexImage);
+            var isbnList = task.Result;
 
-            return _comicService.Get(id);
+            return isbnList;
         }
 
+        [HttpGet("extractimages/{id:length(24)}&{nbImagesToExtract:int}&{first:bool}")]
+        public ActionResult<List<string>> ExtractImages(string id, int nbImagesToExtract, bool first)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+
+            // TODO : check index image < nb images
+
+            if (first)
+            {
+                return _comicFileService.ExtractFirstImages(comic, nbImagesToExtract);
+            } else
+            {
+                return _comicFileService.ExtractLastImages(comic, nbImagesToExtract);
+            }
+            
+        }
 
 
         [HttpDelete("{id:length(24)}")]
