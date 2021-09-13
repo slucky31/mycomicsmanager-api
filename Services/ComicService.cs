@@ -148,10 +148,10 @@ namespace MyComicsManagerApi.Services
                 comic.FicheUrl = results[ComicDataEnum.URL];
                 comic.Colorist = results[ComicDataEnum.COLORISTE];
                 /* TODO : Liste des champs restants à gérer
-                - Category;                
-                - LanguageISO;
-                - PageCount;
-                - Price; */
+                - Category               
+                - LanguageISO
+                - PageCount
+                - Price */
                 Update(comic.Id, comic);
             }           
         }
