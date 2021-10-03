@@ -17,7 +17,7 @@ namespace MyComicsManagerApiTests
         {
             parser = new HtmlDataParser();
             parser.LoadDocument("https://opensource.org/licenses/MS-PL");
-            var title = parser.ExtractTextValue("/html/body/div[5]/div/div/div/section/div/div/h1");
+            var title = parser.ExtractTextValue("/html/body/div[6]/div/div/div/section/div/div/h1");
             title.Should().Be("Microsoft Public License (MS-PL)");
 
         }
@@ -27,7 +27,7 @@ namespace MyComicsManagerApiTests
         {
             parser = new HtmlDataParser();
             parser.LoadDocument("https://opensource.org/licenses/MS-PL");
-            var title = parser.ExtractTextValueAndSplitOnSeparator("/html/body/div[5]/div/div/div/section/div/div/h1","(",0);
+            var title = parser.ExtractTextValueAndSplitOnSeparator("/html/body/div[6]/div/div/div/section/div/div/h1","(",0);
             title.Should().Be("Microsoft Public License");
 
         }
@@ -37,7 +37,7 @@ namespace MyComicsManagerApiTests
         {
             parser = new HtmlDataParser();
             parser.LoadDocument("https://opensource.org/licenses/MS-PL");
-            var title = parser.ExtractAttributValue("/html/body/div[5]/div/div/div/section/div/div/h1", "class");
+            var title = parser.ExtractAttributValue("/html/body/div[6]/div/div/div/section/div/div/h1", "class");
             title.Should().Be("page-title");
 
         }
