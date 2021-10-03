@@ -1,23 +1,22 @@
-using System;
 using Xunit;
 using FluentAssertions;
 using MyComicsManagerApi.DataParser;
-using System.Threading.Tasks;
 
 namespace MyComicsManagerApiTests
 {
     public class HtmlDataParserTests
     {
         
-        private HtmlDataParser parser { get; set; }
+        private HtmlDataParser Parser { get; set; }
+        private const string TitleXPath = "/html/body/div[5]/div/div/div/section/div/div/h1";
         
         
         [Fact]
         public void ExtractTextValue()
         {
-            parser = new HtmlDataParser();
-            parser.LoadDocument("https://opensource.org/licenses/MS-PL");
-            var title = parser.ExtractTextValue("/html/body/div[5]/div/div/div/section/div/div/h1");
+            Parser = new HtmlDataParser();
+            Parser.LoadDocument("https://opensource.org/licenses/MS-PL");
+            var title = Parser.ExtractTextValue(TitleXPath);
             title.Should().Be("Microsoft Public License (MS-PL)");
 
         }
@@ -25,19 +24,19 @@ namespace MyComicsManagerApiTests
         [Fact]
         public void ExtractTextValueAndSplitOnSeparator()
         {
-            parser = new HtmlDataParser();
-            parser.LoadDocument("https://opensource.org/licenses/MS-PL");
-            var title = parser.ExtractTextValueAndSplitOnSeparator("/html/body/div[5]/div/div/div/section/div/div/h1","(",0);
+            Parser = new HtmlDataParser();
+            Parser.LoadDocument("https://opensource.org/licenses/MS-PL");
+            var title = Parser.ExtractTextValueAndSplitOnSeparator(TitleXPath,"(",0);
             title.Should().Be("Microsoft Public License");
 
         }
 
         [Fact]
-        public void ExtractAttributValue()
+        public void ExtractAttributeValue()
         {
-            parser = new HtmlDataParser();
-            parser.LoadDocument("https://opensource.org/licenses/MS-PL");
-            var title = parser.ExtractAttributValue("/html/body/div[5]/div/div/div/section/div/div/h1", "class");
+            Parser = new HtmlDataParser();
+            Parser.LoadDocument("https://opensource.org/licenses/MS-PL");
+            var title = Parser.ExtractAttributValue(TitleXPath, "class");
             title.Should().Be("page-title");
 
         }

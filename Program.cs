@@ -6,7 +6,7 @@ using Serilog;
 
 namespace MyComicsManagerApi
 {
-    public class Program
+    public static class Program
     {
         //
         // https://github.com/serilog/serilog-aspnetcore/blob/71165692d5f66c811c3b251047b12c259ac2fe23/samples/EarlyInitializationSample/Program.cs#L12
