@@ -40,6 +40,7 @@ namespace MyComicsManagerApi.Services
         {
             // Normalizes the path.
             string extractPath = Path.GetFullPath(_libraryService.GetCoversDirRootPath() + "/isbn/");
+            Directory.CreateDirectory(extractPath);
 
             List<string> firstImages = new List<string>();
             for (int i=0;i<nbImagesToExtract;i++)
@@ -53,18 +54,18 @@ namespace MyComicsManagerApi.Services
         public List<string> ExtractLastImages(Comic comic, int nbImagesToExtract)
         {
             // Normalizes the path.
-            string extractPath = Path.GetFullPath(_libraryService.GetCoversDirRootPath() + "/isbn/");
+            var extractPath = Path.GetFullPath(_libraryService.GetCoversDirRootPath() + "/isbn/");
+            Directory.CreateDirectory(extractPath);
 
-            List<string> lastImages = new List<string>();
-
+            var lastImages = new List<string>();
             if (comic.PageCount == 0)
             {
                 SetNumberOfImagesInCbz(comic);
             }
 
-            for (int i = comic.PageCount - nbImagesToExtract; i < comic.PageCount; i++)
+            for (var i = comic.PageCount - nbImagesToExtract; i < comic.PageCount; i++)
             {
-                string fileName = Path.GetFileName(ExtractImageFromCbz(comic, extractPath, i));
+                var fileName = Path.GetFileName(ExtractImageFromCbz(comic, extractPath, i));
                 lastImages.Add(fileName);
             }
 
@@ -124,7 +125,7 @@ namespace MyComicsManagerApi.Services
         {
             string tempDir = CreateTempDirectory();
 
-            // Extartion des images du PDF
+            // Extraction des images du PDF
             string extension = Path.GetExtension(comic.EbookPath);
             switch (extension)
             {
