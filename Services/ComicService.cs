@@ -133,23 +133,31 @@ namespace MyComicsManagerApi.Services
             {
                 var parser = new BdphileComicHtmlDataParser();
                 var results = parser.Parse(comic.ISBN);
-                comic.Editor = results[ComicDataEnum.EDITEUR];
-                comic.ISBN = results[ComicDataEnum.ISBN];
-                comic.Penciller = results[ComicDataEnum.DESSINATEUR];
-                // comic.Published = results[ComicDataEnum.DATE_PARUTION]; // TODO : Conversion de date
-                comic.Review = int.Parse(results[ComicDataEnum.NOTE].Split(".")[0]); // TODO : Exception ?
-                comic.Serie = results[ComicDataEnum.SERIE];
-                comic.Title = results[ComicDataEnum.TITRE];
-                comic.Volume = results[ComicDataEnum.TOME];
-                comic.Writer = results[ComicDataEnum.SCENARISTE];
-                comic.FicheUrl = results[ComicDataEnum.URL];
-                comic.Colorist = results[ComicDataEnum.COLORISTE];
-                /* TODO : Liste des champs restants à gérer
-                - Category               
-                - LanguageISO
-                - PageCount
-                - Price */
-                Update(comic.Id, comic);
+
+                if (results.Count > 0)
+                {
+
+                    // TODO : si la clé n'existe pas, on a un plantage ! Il faudrait gérer cela plus proprement !
+
+                    comic.Editor = results[ComicDataEnum.EDITEUR];
+                    comic.ISBN = results[ComicDataEnum.ISBN];
+                    comic.Penciller = results[ComicDataEnum.DESSINATEUR];
+                    // comic.Published = results[ComicDataEnum.DATE_PARUTION]; // TODO : Conversion de date
+                    comic.Review = int.Parse(results[ComicDataEnum.NOTE].Split(".")[0]); // TODO : Exception ?
+                    comic.Serie = results[ComicDataEnum.SERIE];
+                    comic.Title = results[ComicDataEnum.TITRE];
+                    comic.Volume = results[ComicDataEnum.TOME];
+                    comic.Writer = results[ComicDataEnum.SCENARISTE];
+                    comic.FicheUrl = results[ComicDataEnum.URL];
+                    comic.Colorist = results[ComicDataEnum.COLORISTE];
+                    /* TODO : Liste des champs restants à gérer
+                    - Category               
+                    - LanguageISO
+                    - PageCount
+                    - Price */
+                    Update(comic.Id, comic);
+                }
+                // TODO : throw Exception pour remonter côté WS ?
             }           
         }
 

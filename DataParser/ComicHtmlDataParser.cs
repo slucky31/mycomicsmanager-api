@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Serilog;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -32,11 +34,19 @@ namespace MyComicsManagerApi.DataParser
 
         public Dictionary<ComicDataEnum, string> Parse(string isbn)
         {
-            Search(isbn);
-            // TODO Exception ISBN Not Found !
-
+            
             ExtractedData.Clear();
-
+            
+            try
+            {
+                Search(isbn);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Aucune donnée n'a été remontée de la recherche !");
+                return ExtractedData;
+            }
+            
             ExtractedData.Add(ComicDataEnum.TITRE, ExtractTitre());
             ExtractedData.Add(ComicDataEnum.SERIE, ExtractSerie());
             ExtractedData.Add(ComicDataEnum.SERIE_URL, ExtractSerieUrl());
