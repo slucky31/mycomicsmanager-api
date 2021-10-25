@@ -17,6 +17,7 @@ namespace MyComicsManagerApi.Services
 {
     public class ComicFileService
     {
+
         private readonly LibraryService _libraryService;
         private readonly ComputerVisionService _computerVisionService;
 
@@ -25,8 +26,7 @@ namespace MyComicsManagerApi.Services
             _libraryService = libraryService;
             _computerVisionService = computerVisionService;
         }
-
- 
+        
         public void SetAndExtractCoverImage(Comic comic)
         {
             // Normalizes the path.
@@ -75,7 +75,7 @@ namespace MyComicsManagerApi.Services
         // https://docs.microsoft.com/fr-fr/dotnet/standard/io/how-to-compress-and-extract-files
         private string ExtractImageFromCbz(Comic comic, string extractPath, int imageIndex)
         {
-            string zipPath = comic.EbookPath;                       
+            var zipPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);                       
             Log.Information("Les fichiers seront extraits dans {path}", extractPath);
 
             // Ensures that the last character on the extraction path
@@ -123,10 +123,11 @@ namespace MyComicsManagerApi.Services
 
         public void ConvertComicFileToCbz(Comic comic)
         {
-            string tempDir = CreateTempDirectory();
+            var tempDir = CreateTempDirectory();
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
 
             // Extraction des images du PDF
-            string extension = Path.GetExtension(comic.EbookPath);
+            var extension = Path.GetExtension(comicEbookPath);
             switch (extension)
             {
                 case ".cbz":
@@ -153,7 +154,7 @@ namespace MyComicsManagerApi.Services
             // Création de l'archive à partir du répertoire
             // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
             // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
-            string cbzPath = Path.GetFullPath(Path.Combine(_libraryService.GetFileUploadDirRootPath(), Path.ChangeExtension(comic.EbookPath, ".cbz")));
+            string cbzPath = Path.GetFullPath(Path.Combine(_libraryService.GetFileUploadDirRootPath(), Path.ChangeExtension(comicEbookPath, ".cbz")));
             Log.Information("CbzPath = {0}", cbzPath);
 
             var images = Directory.GetFiles(tempDir, "*.*", SearchOption.AllDirectories)
@@ -174,7 +175,7 @@ namespace MyComicsManagerApi.Services
             try
             {
                 Directory.Delete(tempDir, true);
-                File.Delete(comic.EbookPath);
+                File.Delete(comicEbookPath);
             }
             catch (Exception e)
             {
@@ -182,18 +183,20 @@ namespace MyComicsManagerApi.Services
             }
 
             // Mise à jour de l'objet Comic avec le nouveau fichier CBZ
-            comic.EbookPath = Path.ChangeExtension(comic.EbookPath, ".cbz");
             comic.EbookName = Path.GetFileName(cbzPath);
         }
 
-        private static void ExtractImagesFromCbz(Comic comic, string tempDir)
+        private void ExtractImagesFromCbz(Comic comic, string tempDir)
         {
-            ZipFile.ExtractToDirectory(comic.EbookPath, tempDir, overwriteFiles: true);
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            ZipFile.ExtractToDirectory(comicEbookPath, tempDir, overwriteFiles: true);
         }
 
-        private static void ExtractImagesFromPdf(Comic comic, string tempDir)
+        private void ExtractImagesFromPdf(Comic comic, string tempDir)
         {
-            PdfDocument document = PdfDocument.Open(comic.EbookPath);
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            
+            PdfDocument document = PdfDocument.Open(comicEbookPath);
             foreach (Page page in document.GetPages())
             {
                 foreach (var image in page.GetImages())
@@ -211,8 +214,9 @@ namespace MyComicsManagerApi.Services
 
         public void ExtractImagesFromCbr(Comic comic, string tempDir)
         {
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
             
-            using (Stream stream = File.OpenRead(comic.EbookPath))
+            using (Stream stream = File.OpenRead(comicEbookPath))
             using (var reader = ReaderFactory.Open(stream))
             {
                 while (reader.MoveToNextEntry())
@@ -232,7 +236,7 @@ namespace MyComicsManagerApi.Services
 
         public void SetNumberOfImagesInCbz(Comic comic)
         {
-            string zipPath = comic.EbookPath;            
+            string zipPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);          
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
             {                                            
                 var images = archive.Entries.Where(s => s.FullName.EndsWith(".jpg") || s.FullName.EndsWith(".png") || s.FullName.EndsWith(".gif") || s.FullName.EndsWith(".webp"));
@@ -277,6 +281,11 @@ namespace MyComicsManagerApi.Services
             }
 
             return tempDir;
+        }
+        
+        public string GetComicEbookPath(Comic comic, LibraryService.PathType pathType)
+        {
+            return _libraryService.GetLibraryPath(comic.LibraryId, pathType) + comic.EbookName;
         }
     }
 }
