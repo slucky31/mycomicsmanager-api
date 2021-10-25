@@ -34,7 +34,7 @@ namespace MyComicsManagerApi.Models
 
         public string Summary { get; set; }
 
-        public decimal Price { get; set; }
+        public double Price { get; set; }
 
         public string Category { get; set; }
 
@@ -52,7 +52,7 @@ namespace MyComicsManagerApi.Models
         
         public int PageCount { get; set; }
 
-        public int Review { get; set; }
+        public double Review { get; set; }
 
         public string FicheUrl { get; set; }
 

@@ -6,6 +6,7 @@ using Serilog;
 using System.IO;
 using System.Threading.Tasks;
 using System;
+using System.Globalization;
 using MyComicsManagerApi.DataParser;
 
 namespace MyComicsManagerApi.Services
@@ -138,23 +139,53 @@ namespace MyComicsManagerApi.Services
                 {
 
                     // TODO : si la clé n'existe pas, on a un plantage ! Il faudrait gérer cela plus proprement !
-
+                    
                     comic.Editor = results[ComicDataEnum.EDITEUR];
                     comic.ISBN = results[ComicDataEnum.ISBN];
                     comic.Penciller = results[ComicDataEnum.DESSINATEUR];
-                    // comic.Published = results[ComicDataEnum.DATE_PARUTION]; // TODO : Conversion de date
-                    comic.Review = int.Parse(results[ComicDataEnum.NOTE].Split(".")[0]); // TODO : Exception ?
                     comic.Serie = results[ComicDataEnum.SERIE];
                     comic.Title = results[ComicDataEnum.TITRE];
                     comic.Volume = results[ComicDataEnum.TOME];
                     comic.Writer = results[ComicDataEnum.SCENARISTE];
                     comic.FicheUrl = results[ComicDataEnum.URL];
                     comic.Colorist = results[ComicDataEnum.COLORISTE];
-                    /* TODO : Liste des champs restants à gérer
-                    - Category               
-                    - LanguageISO
-                    - PageCount
-                    - Price */
+                    comic.LanguageISO = results[ComicDataEnum.LANGAGE];
+                    var frCulture = new CultureInfo("fr-FR");
+                    
+                    DateTime dateValue;
+                    DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
+                    if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
+                        dateTimeStyles, out dateValue))
+                    {
+                        comic.Published = dateValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse de la date de publication : {datePublication}", results[ComicDataEnum.DATE_PARUTION]);
+                    }
+
+                    double doubleValue;
+                    NumberStyles style = NumberStyles.AllowDecimalPoint;
+                    if (double.TryParse(results[ComicDataEnum.NOTE], style, CultureInfo.InvariantCulture, out doubleValue))
+                    {
+                        comic.Review = doubleValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse de la note : {Note}", results[ComicDataEnum.NOTE]);
+                        comic.Review = -1;
+                    }
+                    
+                    if (double.TryParse(results[ComicDataEnum.PRIX].Split('€')[0], style, CultureInfo.InvariantCulture, out doubleValue))
+                    {
+                        comic.Price = doubleValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse du prix : {Prix}", results[ComicDataEnum.PRIX]);
+                        comic.Review = -1;
+                    }
+                    
                     Update(comic.Id, comic);
                 }
                 // TODO : throw Exception pour remonter côté WS ?

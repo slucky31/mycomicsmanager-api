@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using MyComicsManagerApi.Exceptions;
 using Serilog;
@@ -119,6 +120,23 @@ namespace MyComicsManagerApi.DataParser
                 Regex regexObj = new Regex(@"[^\d]");
                 return regexObj.Replace(tome, "");
             }
+        }
+
+        protected override string ExtractLangage()
+        {
+            if (IsOneShot)
+            {
+                return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span[2]");
+            }
+            else
+            {
+                return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span");    
+            }
+        }
+        
+        protected override string ExtractPrix()
+        {
+            return ExtractedInfo.GetValueOrDefault("Format", "").Split('-').Last().Trim(); // TODO : Risque de plantage !!
         }
 
         protected override string ExtractURL()
