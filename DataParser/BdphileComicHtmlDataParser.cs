@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Serilog;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -154,6 +155,7 @@ namespace MyComicsManagerApi.DataParser
 
             // Récupération de l'URL de la fiche du comic
             FicheURL = ExtractAttributValue("/html/body/div[1]/section[2]/div/div[2]/a[1]", "href");
+            Log.Information("FicheURL = {FicheUrl}",FicheURL);
 
             // Récupération de la page liée à l'ISBN recherché
             LoadDocument(FicheURL);
