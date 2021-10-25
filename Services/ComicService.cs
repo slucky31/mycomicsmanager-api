@@ -82,6 +82,9 @@ namespace MyComicsManagerApi.Services
             var filter = Builders<Comic>.Filter.Eq(c => c.Id,comic.Id);
             var update = Builders<Comic>.Update.Set(c => c.CoverPath, comic.CoverPath);            
             this.UpdateField(filter, update);
+            
+            // Création du fichier ComicInfo.xml
+            _comicFileService.AddComicInfoInComicFile(comic);
 
             return comic;
         }

@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
@@ -169,9 +170,8 @@ namespace MyComicsManagerApi.Services
                 var entry = archive.CreateEntryFromFile(image,Path.GetFileName(image),CompressionLevel.Optimal);
                 Log.Information($"{entry.FullName} was compressed.");
             }
-
-
-            // Suppression du dossier temporaire et du fichier PDF
+            
+            // Suppression du dossier temporaire
             try
             {
                 Directory.Delete(tempDir, true);
@@ -266,6 +266,30 @@ namespace MyComicsManagerApi.Services
                 isbnList.Add(match.Value);
             }    
             return isbnList;        
+        }
+
+        public void AddComicInfoInComicFile(Comic comic)
+        {
+            var comicInfo = new ComicInfo();
+            comicInfo.Title = comic.Title;
+            comicInfo.Series = comic.Serie;
+            comicInfo.Writer = comic.Writer;
+            comicInfo.Penciller = comic.Penciller;
+            comicInfo.Colorist = comic.Colorist;
+            comicInfo.Editor = comic.Editor;
+            comicInfo.PageCount = comic.PageCount;
+            comicInfo.LanguageISO = comic.LanguageISO;
+            comicInfo.ISBN = comic.ISBN;
+            
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+
+            using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
+            using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
+            var readmeEntry = archive.CreateEntry("ComicInfo.xml");
+            using var writer = new StreamWriter(readmeEntry.Open());
+            var mySerializer = new XmlSerializer(typeof(ComicInfo));
+            mySerializer.Serialize(writer, comicInfo);
+            writer.Close();
         }
 
         private static string CreateTempDirectory()
