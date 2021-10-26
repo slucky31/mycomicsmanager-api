@@ -291,6 +291,11 @@ namespace MyComicsManagerApi.Services
                 LanguageISO = comic.LanguageISO,
                 ISBN = comic.ISBN,
                 Web = comic.FicheUrl,
+                Price = comic.Price,
+                Published = comic.Published,
+                Tags = comic.Category,
+                Review = comic.Review,
+                Volume = comic.Volume
                 
             };
 
@@ -336,6 +341,12 @@ namespace MyComicsManagerApi.Services
             comic.Editor = comicInfo.Editor;
             comic.LanguageISO = comicInfo.LanguageISO;
             comic.ISBN = comicInfo.ISBN;
+            comic.FicheUrl = comicInfo.Web;
+            comic.Price = comicInfo.Price;
+            comic.Published = comicInfo.Published;
+            comic.Category = comicInfo.Tags;
+            comic.Review = comicInfo.Review;
+            comic.Volume = comicInfo.Volume;
 
             return comic;
         }

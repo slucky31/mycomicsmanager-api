@@ -30,7 +30,7 @@ namespace MyComicsManagerApi.Models
 
         public string ISBN { get; set; }
 
-        public string Volume { get; set; }
+        public int Volume { get; set; }
 
         public string Summary { get; set; }
 
