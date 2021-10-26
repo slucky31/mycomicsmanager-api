@@ -268,34 +268,80 @@ namespace MyComicsManagerApi.Services
             return isbnList;        
         }
 
+        public bool HasComicInfoInComicFile(Comic comic)
+        {
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
+            using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
+            var entry = archive.GetEntry("ComicInfo.xml");
+            return (entry != null);
+        }
+
         public void AddComicInfoInComicFile(Comic comic)
         {
-            var comicInfo = new ComicInfo();
-            comicInfo.Title = comic.Title;
-            comicInfo.Series = comic.Serie;
-            comicInfo.Writer = comic.Writer;
-            comicInfo.Penciller = comic.Penciller;
-            comicInfo.Colorist = comic.Colorist;
-            comicInfo.Editor = comic.Editor;
-            comicInfo.PageCount = comic.PageCount;
-            comicInfo.LanguageISO = comic.LanguageISO;
-            comicInfo.ISBN = comic.ISBN;
-            
+            var comicInfo = new ComicInfo
+            {
+                Title = comic.Title,
+                Series = comic.Serie,
+                Writer = comic.Writer,
+                Penciller = comic.Penciller,
+                Colorist = comic.Colorist,
+                Editor = comic.Editor,
+                PageCount = comic.PageCount,
+                LanguageISO = comic.LanguageISO,
+                ISBN = comic.ISBN
+            };
+
             var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
 
             using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
             using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
-            var readmeEntry = archive.CreateEntry("ComicInfo.xml");
-            using var writer = new StreamWriter(readmeEntry.Open());
+            
+            // Suppression du fichier ComicInfo.xml si il exsite
+            var entry = archive.GetEntry("ComicInfo.xml");
+            entry?.Delete();
+            
+            // Ajout du fichier ComicInfo.xml dans l'archive
+            var comicInfoEntry = archive.CreateEntry("ComicInfo.xml");
+            using var writer = new StreamWriter(comicInfoEntry.Open());
             var mySerializer = new XmlSerializer(typeof(ComicInfo));
             mySerializer.Serialize(writer, comicInfo);
             writer.Close();
+        }
+        
+        public Comic ExtractDataFromComicInfo(Comic comic)
+        {
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
+            using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
+            
+            // Vérification de la présence du fichier ComicInfo.xml
+            var entry = archive.GetEntry("ComicInfo.xml");
+            if (entry == null) return comic;
+            
+            // Construction de l'objet ComicInfo à partir de l'XML
+            using var reader = new StreamReader(entry.Open());
+            var serializer = new XmlSerializer(typeof(ComicInfo));
+            var comicInfo = (ComicInfo) serializer.Deserialize(reader);
+
+            // Récupération des informations
+            if (comicInfo == null) return comic;
+            comic.Title = comicInfo.Title;
+            comic.Serie = comicInfo.Series;
+            comic.Writer = comicInfo.Writer;
+            comic.Penciller = comicInfo.Penciller;
+            comic.Colorist = comicInfo.Colorist;
+            comic.Editor = comicInfo.Editor;
+            comic.LanguageISO = comicInfo.LanguageISO;
+            comic.ISBN = comicInfo.ISBN;
+
+            return comic;
         }
 
         private static string CreateTempDirectory()
         {
             // Création d'un répertoire temporaire pour stocker les images
-            string tempDir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            var tempDir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
             Directory.CreateDirectory(tempDir);
             Log.Information("Créaction du répertoire temporaire : {tempDir}", tempDir);
 

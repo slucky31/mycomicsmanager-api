@@ -41,7 +41,7 @@ namespace MyComicsManagerApi.Services
             
             // Récupération du fichier dans le répertoire d'Upload
             var origin = Path.GetFullPath(_libraryService.GetFileUploadDirRootPath() + comic.EbookName);
-            
+
             // Déplacement du fichier vers la librairie sélectionné
             var destination = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
             try
@@ -62,6 +62,12 @@ namespace MyComicsManagerApi.Services
                 // Conversion du fichier en CBZ
                 _comicFileService.ConvertComicFileToCbz(comic);
                 
+                // Récupération des données du fichier ComicInfo.xml si il existe
+                if (_comicFileService.HasComicInfoInComicFile(comic))
+                {
+                    comic = _comicFileService.ExtractDataFromComicInfo(comic);
+                }
+                
             }
             catch (Exception e)
             {                
@@ -81,7 +87,7 @@ namespace MyComicsManagerApi.Services
             _comicFileService.SetAndExtractCoverImage(comic);
             var filter = Builders<Comic>.Filter.Eq(c => c.Id,comic.Id);
             var update = Builders<Comic>.Update.Set(c => c.CoverPath, comic.CoverPath);            
-            this.UpdateField(filter, update);
+            UpdateField(filter, update);
             
             // Création du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
@@ -91,7 +97,12 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
+            // Mise à jour en base de données
             _comics.ReplaceOne(comic => comic.Id == id, comic);
+            
+            // Mise à jour du fichier ComicInfo.xml
+            _comicFileService.AddComicInfoInComicFile(comic);
+            
         }
 
         public void UpdateField(FilterDefinition<Comic> filter, UpdateDefinition<Comic> update)
