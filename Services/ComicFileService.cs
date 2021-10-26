@@ -289,7 +289,9 @@ namespace MyComicsManagerApi.Services
                 Editor = comic.Editor,
                 PageCount = comic.PageCount,
                 LanguageISO = comic.LanguageISO,
-                ISBN = comic.ISBN
+                ISBN = comic.ISBN,
+                Web = comic.FicheUrl,
+                
             };
 
             var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
