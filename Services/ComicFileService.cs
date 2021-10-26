@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
@@ -169,9 +170,8 @@ namespace MyComicsManagerApi.Services
                 var entry = archive.CreateEntryFromFile(image,Path.GetFileName(image),CompressionLevel.Optimal);
                 Log.Information($"{entry.FullName} was compressed.");
             }
-
-
-            // Suppression du dossier temporaire et du fichier PDF
+            
+            // Suppression du dossier temporaire
             try
             {
                 Directory.Delete(tempDir, true);
@@ -268,10 +268,93 @@ namespace MyComicsManagerApi.Services
             return isbnList;        
         }
 
+        public bool HasComicInfoInComicFile(Comic comic)
+        {
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
+            using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
+            var entry = archive.GetEntry("ComicInfo.xml");
+            return (entry != null);
+        }
+
+        public void AddComicInfoInComicFile(Comic comic)
+        {
+            var comicInfo = new ComicInfo
+            {
+                Title = comic.Title,
+                Series = comic.Serie,
+                Writer = comic.Writer,
+                Penciller = comic.Penciller,
+                Colorist = comic.Colorist,
+                Editor = comic.Editor,
+                PageCount = comic.PageCount,
+                LanguageISO = comic.LanguageISO,
+                ISBN = comic.ISBN,
+                Web = comic.FicheUrl,
+                Price = comic.Price,
+                Published = comic.Published,
+                Tags = comic.Category,
+                Review = comic.Review,
+                Volume = comic.Volume
+                
+            };
+
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+
+            using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
+            using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
+            
+            // Suppression du fichier ComicInfo.xml si il exsite
+            var entry = archive.GetEntry("ComicInfo.xml");
+            entry?.Delete();
+            
+            // Ajout du fichier ComicInfo.xml dans l'archive
+            var comicInfoEntry = archive.CreateEntry("ComicInfo.xml");
+            using var writer = new StreamWriter(comicInfoEntry.Open());
+            var mySerializer = new XmlSerializer(typeof(ComicInfo));
+            mySerializer.Serialize(writer, comicInfo);
+            writer.Close();
+        }
+        
+        public Comic ExtractDataFromComicInfo(Comic comic)
+        {
+            var comicEbookPath = GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            using var zipToOpen = new FileStream(comicEbookPath, FileMode.Open);
+            using var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update);
+            
+            // Vérification de la présence du fichier ComicInfo.xml
+            var entry = archive.GetEntry("ComicInfo.xml");
+            if (entry == null) return comic;
+            
+            // Construction de l'objet ComicInfo à partir de l'XML
+            using var reader = new StreamReader(entry.Open());
+            var serializer = new XmlSerializer(typeof(ComicInfo));
+            var comicInfo = (ComicInfo) serializer.Deserialize(reader);
+
+            // Récupération des informations
+            if (comicInfo == null) return comic;
+            comic.Title = comicInfo.Title;
+            comic.Serie = comicInfo.Series;
+            comic.Writer = comicInfo.Writer;
+            comic.Penciller = comicInfo.Penciller;
+            comic.Colorist = comicInfo.Colorist;
+            comic.Editor = comicInfo.Editor;
+            comic.LanguageISO = comicInfo.LanguageISO;
+            comic.ISBN = comicInfo.ISBN;
+            comic.FicheUrl = comicInfo.Web;
+            comic.Price = comicInfo.Price;
+            comic.Published = comicInfo.Published;
+            comic.Category = comicInfo.Tags;
+            comic.Review = comicInfo.Review;
+            comic.Volume = comicInfo.Volume;
+
+            return comic;
+        }
+
         private static string CreateTempDirectory()
         {
             // Création d'un répertoire temporaire pour stocker les images
-            string tempDir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            var tempDir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
             Directory.CreateDirectory(tempDir);
             Log.Information("Créaction du répertoire temporaire : {tempDir}", tempDir);
 
