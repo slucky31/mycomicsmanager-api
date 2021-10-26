@@ -358,3 +358,7 @@ MyComicsManagerWeb/Covers/**
 
 
 # MyComicsManagerApi
+
+
+# Rider
+.idea/
