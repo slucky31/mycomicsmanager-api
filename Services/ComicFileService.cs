@@ -97,7 +97,7 @@ namespace MyComicsManagerApi.Services
                     throw new ArgumentOutOfRangeException("imageIndex", "imageIndex (" + imageIndex + ") doit être compris entre 0 et " + archive.Entries.Count + ".");
                 }
                 
-                var images = archive.Entries.Where(s => s.FullName.EndsWith(".jpg") || s.FullName.EndsWith(".png") || s.FullName.EndsWith(".gif") || s.FullName.EndsWith(".webp"));
+                var images = archive.Entries.Where(s => s.FullName.EndsWith(".jpg") || s.FullName.EndsWith(".png") || s.FullName.EndsWith(".gif") || s.FullName.EndsWith(".webp")).OrderBy(s => s.FullName);
                 ZipArchiveEntry entry = images.ElementAt(imageIndex);
 
                 if (null != entry)

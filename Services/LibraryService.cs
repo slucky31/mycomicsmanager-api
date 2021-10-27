@@ -41,10 +41,7 @@ namespace MyComicsManagerApi.Services
 
             // Création de la librairie dans libs
             Directory.CreateDirectory(GetLibraryPath(libraryIn.Id, PathType.ABSOLUTE_PATH));
-
-            // Création de import dans la librairie
-            Directory.CreateDirectory(GetLibraryImportPath(libraryIn.Id, PathType.ABSOLUTE_PATH));
-
+            
             // Création du répertoire d'upload si il n'est pas déjà créé
             GetFileUploadDirRootPath();
 
@@ -83,11 +80,6 @@ namespace MyComicsManagerApi.Services
                 }
                 return path + lib.RelPath.TrimEnd(charsToTrim) + Path.DirectorySeparatorChar; 
             }
-        }
-
-        public string GetLibraryImportPath(string id, PathType type)
-        {    
-            return GetLibraryPath(id,type) + "import";
         }
 
         public string GetLibrairiesDirRootPath() {
