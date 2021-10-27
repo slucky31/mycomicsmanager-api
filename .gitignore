@@ -349,12 +349,10 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-# MyComicsManagerWeb
-MyComicsManagerWeb/Covers/
-MyComicsManagerWeb/Covers/**
-*.cbz
-*.cbr
-*.pdf
-
-
 # MyComicsManagerApi
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/

@@ -1,13 +1,12 @@
 using MyComicsManagerApi.Models;
 using MongoDB.Driver;
 using System.Collections.Generic;
-using System.Linq;
 using Serilog;
 using System.IO;
-using System.Threading.Tasks;
 using System;
 using System.Globalization;
 using MyComicsManagerApi.DataParser;
+using MyComicsManagerApi.Utils;
 
 namespace MyComicsManagerApi.Services
 {
@@ -19,7 +18,7 @@ namespace MyComicsManagerApi.Services
 
         public ComicService(IDatabaseSettings settings, LibraryService libraryService, ComicFileService comicFileService)
         {
-            Log.Debug("settings = {@settings}", settings);
+            Log.Debug("settings = {Settings}", settings);
             var client = new MongoClient(settings.ConnectionString);
             var database = client.GetDatabase(settings.DatabaseName);
             _comics = database.GetCollection<Comic>(settings.ComicsCollectionName);
@@ -39,11 +38,13 @@ namespace MyComicsManagerApi.Services
             // TODO : EbookPath ne devrait jamais être null,  car un comic ne peut exister sans fichier !
             // TODO : Vérifier comment est créer un comic la première fois pour s'assurer que le EbookPath n'est pas null
             
-            // Récupération du fichier dans le répertoire d'Upload
-            var origin = Path.GetFullPath(_libraryService.GetFileUploadDirRootPath() + comic.EbookName);
-
-            // Déplacement du fichier vers la librairie sélectionné
-            var destination = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+            // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
+            _comicFileService.ConvertComicFileToCbz(comic, comic.EbookPath);
+            comic.EbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
+            
+            // Déplacement du fichier vers la racine de la librairie sélectionnée
+            var destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
+                              comic.EbookName;
             try
             {
                 
@@ -54,27 +55,26 @@ namespace MyComicsManagerApi.Services
                     comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
                     comic.EbookName = comic.Title + Path.GetExtension(destination);
                     Log.Warning("Il va être renommé en {FileName}", comic.EbookName);
-                    destination = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH);
+                    destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
+                                  comic.EbookName;
                 }
 
-                File.Move(origin, destination);
-                
-                // Conversion du fichier en CBZ
-                _comicFileService.ConvertComicFileToCbz(comic);
-                
-                // Récupération des données du fichier ComicInfo.xml si il existe
-                if (_comicFileService.HasComicInfoInComicFile(comic))
-                {
-                    comic = _comicFileService.ExtractDataFromComicInfo(comic);
-                }
-                
+                File.Move(comic.EbookPath, destination);
             }
             catch (Exception e)
             {                
-                Log.Error("Erreur lors du dépalcement du fichier : {0}", e.Message);
-                Log.Error("Origin = {@origin}", origin);
-                Log.Error("Destination = {@destination}", destination);
+                Log.Error(e,"Erreur lors du déplacement du fichier");
+                Log.Error("Origin = {Origin}", comic.EbookPath);
+                Log.Error("Destination = {Destination}", destination);
                 return null;
+            }
+            comic.EbookPath = comic.EbookName;
+            
+            // Récupération des données du fichier ComicInfo.xml si il existe
+            if (_comicFileService.HasComicInfoInComicFile(comic))
+            {
+                comic = _comicFileService.ExtractDataFromComicInfo(comic);
+                UpdateDirectoryAndFileName(comic);
             }
 
             // Calcul du nombre d'images dans le fichier CBZ
@@ -85,9 +85,7 @@ namespace MyComicsManagerApi.Services
  
             // Extraction de l'image de couverture après enregristrement car nommé avec l'id du comic       
             _comicFileService.SetAndExtractCoverImage(comic);
-            var filter = Builders<Comic>.Filter.Eq(c => c.Id,comic.Id);
-            var update = Builders<Comic>.Update.Set(c => c.CoverPath, comic.CoverPath);            
-            UpdateField(filter, update);
+            Update(comic.Id, comic);
             
             // Création du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
@@ -97,18 +95,49 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
+            UpdateDirectoryAndFileName(comic);
+
             // Mise à jour en base de données
-            _comics.ReplaceOne(comic => comic.Id == id, comic);
+            _comics.ReplaceOne(c => c.Id == id, comic);
             
             // Mise à jour du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
-            
         }
 
-        public void UpdateField(FilterDefinition<Comic> filter, UpdateDefinition<Comic> update)
+        private void UpdateDirectoryAndFileName(Comic comic)
         {
-            var options = new UpdateOptions { IsUpsert = true };
-            _comics.UpdateOne(filter, update, options);
+            // Mise à jour du nom du fichier
+            if (!string.IsNullOrEmpty(comic.Serie) && comic.Volume > 0)
+            {
+                // Calcul de l'origine
+                var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
+
+                // Mise à jour du nom du fichier pour le calcul de la destination
+                comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
+                var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
+                var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
+
+                // Renommage du fichier
+                File.Move(origin, libraryPath + comicEbookPath);
+
+                // Mise à jour du chemin relatif avec le nouveau nom du fichier 
+                comic.EbookPath = comicEbookPath;
+            }
+
+            // Mise à jour de l'arborescence du fichier
+            if (!string.IsNullOrEmpty(comic.Serie))
+            {
+                var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
+                var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
+                var eBookPath = comic.Serie.ToPascalCase() + Path.DirectorySeparatorChar;
+
+                // Création du répertoire de destination
+                Directory.CreateDirectory(libraryPath + eBookPath);
+
+                // Déplacement du fichier
+                File.Move(origin, libraryPath + eBookPath + comic.EbookName);
+                comic.EbookPath = eBookPath + comic.EbookName;
+            }
         }
 
         public void Remove(Comic comic)
@@ -118,8 +147,8 @@ namespace MyComicsManagerApi.Services
             if (c != null) {    
                 
                 // Suppression du fichier
-                if (File.Exists(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH))) {
-                    File.Delete(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.FULL_PATH));
+                if (File.Exists(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH))) {
+                    File.Delete(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH));
                 }
 
                 // Suppression de l'image de couverture
