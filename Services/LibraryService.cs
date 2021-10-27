@@ -16,7 +16,7 @@ namespace MyComicsManagerApi.Services
         public enum PathType
         {
             RELATIVE_PATH,
-            FULL_PATH
+            ABSOLUTE_PATH
         }
 
         public LibraryService(IDatabaseSettings dbSettings, ILibrairiesSettings libSettings)
@@ -40,10 +40,10 @@ namespace MyComicsManagerApi.Services
             _libraries.InsertOne(libraryIn);
 
             // Création de la librairie dans libs
-            Directory.CreateDirectory(GetLibraryPath(libraryIn.Id, PathType.FULL_PATH));
+            Directory.CreateDirectory(GetLibraryPath(libraryIn.Id, PathType.ABSOLUTE_PATH));
 
             // Création de import dans la librairie
-            Directory.CreateDirectory(GetLibraryImportPath(libraryIn.Id, PathType.FULL_PATH));
+            Directory.CreateDirectory(GetLibraryImportPath(libraryIn.Id, PathType.ABSOLUTE_PATH));
 
             // Création du répertoire d'upload si il n'est pas déjà créé
             GetFileUploadDirRootPath();
@@ -59,7 +59,7 @@ namespace MyComicsManagerApi.Services
         {
             
             // Suppression des fichiers et du répértoire dans libs
-            string libPath = GetLibraryPath(libraryIn.Id, PathType.FULL_PATH);
+            string libPath = GetLibraryPath(libraryIn.Id, PathType.ABSOLUTE_PATH);
             if (Directory.Exists(libPath))
             {
                 Directory.Delete(libPath, true);
@@ -77,7 +77,7 @@ namespace MyComicsManagerApi.Services
                 return null;
             } else {
                 string path = "";
-                if (type == PathType.FULL_PATH)
+                if (type == PathType.ABSOLUTE_PATH)
                 {
                     path = GetLibrairiesDirRootPath();
                 }
