@@ -38,12 +38,9 @@ namespace MyComicsManagerApi.Services
             // TODO : EbookPath ne devrait jamais être null,  car un comic ne peut exister sans fichier !
             // TODO : Vérifier comment est créer un comic la première fois pour s'assurer que le EbookPath n'est pas null
             
-            // Récupération du fichier dans le répertoire d'Upload
-            var comicEbookPath = Path.GetFullPath(_libraryService.GetFileUploadDirRootPath() + comic.EbookName);
-            
             // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
-            _comicFileService.ConvertComicFileToCbz(comic, comicEbookPath);
-            comicEbookPath = Path.GetFullPath(_libraryService.GetFileUploadDirRootPath() + comic.EbookName);
+            _comicFileService.ConvertComicFileToCbz(comic, comic.EbookPath);
+            comic.EbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
             
             // Déplacement du fichier vers la racine de la librairie sélectionnée
             var destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
@@ -62,7 +59,7 @@ namespace MyComicsManagerApi.Services
                                   comic.EbookName;
                 }
 
-                File.Move(comicEbookPath, destination);
+                File.Move(comic.EbookPath, destination);
             }
             catch (Exception e)
             {                
@@ -74,7 +71,6 @@ namespace MyComicsManagerApi.Services
             comic.EbookPath = comic.EbookName;
             
             // Récupération des données du fichier ComicInfo.xml si il existe
-            comicEbookPath = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
             if (_comicFileService.HasComicInfoInComicFile(comic))
             {
                 comic = _comicFileService.ExtractDataFromComicInfo(comic);

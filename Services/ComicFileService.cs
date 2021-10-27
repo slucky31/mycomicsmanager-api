@@ -183,7 +183,6 @@ namespace MyComicsManagerApi.Services
 
             // Mise à jour de l'objet Comic avec le nouveau fichier CBZ et le nouveau chemin
             comic.EbookName = Path.GetFileName(cbzPath);
-            comic.EbookPath = ""; // EbookPath est vide tant que l'eBook n'est pas déplacé dans une lib
         }
 
         private void ExtractImagesFromCbz(string comicEbookPath, string tempDir)
