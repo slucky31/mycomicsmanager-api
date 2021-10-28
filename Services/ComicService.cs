@@ -45,21 +45,28 @@ namespace MyComicsManagerApi.Services
             // Déplacement du fichier vers la racine de la librairie sélectionnée
             var destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
                               comic.EbookName;
+            
+            // Gestion du cas où le fichier uploadé existe déjà dans la lib
+            while (File.Exists(destination))
+            {
+                Log.Warning("Le fichier {File} existe déjà", destination);
+                comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
+                comic.EbookName = comic.Title + Path.GetExtension(destination);
+                Log.Warning("Il va être renommé en {FileName}", comic.EbookName);
+                destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
+                              comic.EbookName;
+            }
+            
             try
             {
-                
-                // Gestion du cas où le fichier uploadé existe déjà dans la lib
-                while (File.Exists(destination))
-                {
-                    Log.Warning("Le fichier {File} existe déjà", destination);
-                    comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
-                    comic.EbookName = comic.Title + Path.GetExtension(destination);
-                    Log.Warning("Il va être renommé en {FileName}", comic.EbookName);
-                    destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
-                                  comic.EbookName;
-                }
-
-                File.Move(comic.EbookPath, destination);
+                Log.Information("Test Copy : Debut");
+                Log.Debug("Origin : {Origin}", comic.EbookPath);
+                Log.Debug("Destination : {Destination}", destination);
+                File.Copy(comic.EbookPath, destination);
+                Log.Information("Test Copy : Fin");
+                Log.Information("Test Delete : Debut");
+                File.Delete(comic.EbookPath);
+                Log.Information("Test Delete : Fin");
             }
             catch (Exception e)
             {                
