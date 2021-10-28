@@ -126,6 +126,15 @@ namespace MyComicsManagerApi.Services
         {
             var tempDir = CreateTempDirectory();
             
+            if (File.Exists(comicEbookPath))
+            {
+                Log.Information("1 - Le fichier suivant existe : {Archive}", comicEbookPath);
+            }
+            else
+            {
+                Log.Information("1 - Le fichier suivant n'existe pas : {Archive}", comicEbookPath);
+            }
+            
             // Extraction des images du PDF
             var extension = Path.GetExtension(comicEbookPath);
             switch (extension)
@@ -151,18 +160,39 @@ namespace MyComicsManagerApi.Services
                     return;
             }
 
-            // Création de l'archive à partir du répertoire
-            // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
-            // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
+            if (File.Exists(comicEbookPath))
+            {
+                Log.Information("2 - Le fichier suivant existe : {Archive}", comicEbookPath);
+            }
+            else
+            {
+                Log.Information("2 - Le fichier suivant n'existe pas : {Archive}", comicEbookPath);
+            }
+            
             string cbzPath = Path.GetFullPath(Path.Combine(_libraryService.GetFileUploadDirRootPath(), Path.ChangeExtension(comicEbookPath, ".cbz")));
             Log.Information("CbzPath = {0}", cbzPath);
-
-            var images = Directory.GetFiles(tempDir, "*.*", SearchOption.AllDirectories)
-                .Where(s => s.EndsWith(".jpg") || s.EndsWith(".png") || s.EndsWith(".gif") || s.EndsWith(".webp") || s.EndsWith(".xml"));
+            
             if (File.Exists(cbzPath))
             {
                 File.Delete(cbzPath);
             }
+            
+            if (File.Exists(comicEbookPath))
+            {
+                Log.Information("3 - Le fichier suivant existe : {Archive}", comicEbookPath);
+            }
+            else
+            {
+                Log.Information("3 - Le fichier suivant n'existe pas : {Archive}", comicEbookPath);
+            }
+            
+            // Création de l'archive à partir du répertoire
+            // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
+            // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
+            
+            var images = Directory.GetFiles(tempDir, "*.*", SearchOption.AllDirectories)
+                .Where(s => s.EndsWith(".jpg") || s.EndsWith(".png") || s.EndsWith(".gif") || s.EndsWith(".webp") || s.EndsWith(".xml"));
+            
             using var archive = ZipFile.Open(cbzPath, ZipArchiveMode.Create);
             foreach (var image in images)
             {
@@ -170,11 +200,20 @@ namespace MyComicsManagerApi.Services
                 Log.Information("{FullName} was compressed", entry.FullName);
             }
             
+            if (File.Exists(cbzPath))
+            {
+                Log.Information("4 - Le fichier suivant existe : {Archive}", cbzPath);
+            }
+            else
+            {
+                Log.Information("4 - Le fichier suivant n'existe pas : {Archive}", cbzPath);
+            }
+            
             // Suppression du dossier temporaire
             try
             {
                 Directory.Delete(tempDir, true);
-                File.Delete(comicEbookPath);
+                //File.Delete(comicEbookPath);
             }
             catch (Exception e)
             {

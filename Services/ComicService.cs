@@ -37,27 +37,9 @@ namespace MyComicsManagerApi.Services
             // TODO : Faire une vérification sur les champs qui vont être utilisés plus tard : EbookName, EbookPath
             // TODO : EbookPath ne devrait jamais être null,  car un comic ne peut exister sans fichier !
             // TODO : Vérifier comment est créer un comic la première fois pour s'assurer que le EbookPath n'est pas null
-            
-            if (File.Exists(comic.EbookPath))
-            {
-                Log.Information("#1 - Le fichier suivant existe : {Origin}", comic.EbookPath);    
-            }
-            else
-            {
-                Log.Information("#1 - Le fichier suivant n'existe pas : {Origin}", comic.EbookPath);
-            }
-            
+
             // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
             _comicFileService.ConvertComicFileToCbz(comic, comic.EbookPath);
-            
-            if (File.Exists(comic.EbookPath))
-            {
-                Log.Information("#2 - Le fichier suivant existe : {Origin}", comic.EbookPath);    
-            }
-            else
-            {
-                Log.Information("#2 - Le fichier suivant n'existe pas : {Origin}", comic.EbookPath);
-            }
             
             comic.EbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
             
@@ -78,20 +60,7 @@ namespace MyComicsManagerApi.Services
             
             try
             {
-                if (File.Exists(comic.EbookPath))
-                {
-                    Log.Information("Le fichier suivant existe : {Origin}", comic.EbookPath);    
-                }
-                else
-                {
-                    Log.Information("Le fichier suivant n'existe pas : {Origin}", comic.EbookPath);
-                }
-                Log.Information("Test Copy : Debut");
-                File.Copy(comic.EbookPath, destination);
-                Log.Information("Test Copy : Fin");
-                Log.Information("Test Delete : Debut");
-                File.Delete(comic.EbookPath);
-                Log.Information("Test Delete : Fin");
+                File.Move(comic.EbookPath, destination);
             }
             catch (Exception e)
             {                
