@@ -59,9 +59,15 @@ namespace MyComicsManagerApi.Services
             
             try
             {
+                if (File.Exists(comic.EbookPath))
+                {
+                    Log.Information("Le fichier suivant existe : {Origin}", comic.EbookPath);    
+                }
+                else
+                {
+                    Log.Information("Le fichier suivant n'existe pas : {Origin}", comic.EbookPath);
+                }
                 Log.Information("Test Copy : Debut");
-                Log.Debug("Origin : {Origin}", comic.EbookPath);
-                Log.Debug("Destination : {Destination}", destination);
                 File.Copy(comic.EbookPath, destination);
                 Log.Information("Test Copy : Fin");
                 Log.Information("Test Delete : Debut");
