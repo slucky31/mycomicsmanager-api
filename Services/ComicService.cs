@@ -38,8 +38,27 @@ namespace MyComicsManagerApi.Services
             // TODO : EbookPath ne devrait jamais être null,  car un comic ne peut exister sans fichier !
             // TODO : Vérifier comment est créer un comic la première fois pour s'assurer que le EbookPath n'est pas null
             
+            if (File.Exists(comic.EbookPath))
+            {
+                Log.Information("#1 - Le fichier suivant existe : {Origin}", comic.EbookPath);    
+            }
+            else
+            {
+                Log.Information("#1 - Le fichier suivant n'existe pas : {Origin}", comic.EbookPath);
+            }
+            
             // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
             _comicFileService.ConvertComicFileToCbz(comic, comic.EbookPath);
+            
+            if (File.Exists(comic.EbookPath))
+            {
+                Log.Information("#2 - Le fichier suivant existe : {Origin}", comic.EbookPath);    
+            }
+            else
+            {
+                Log.Information("#2 - Le fichier suivant n'existe pas : {Origin}", comic.EbookPath);
+            }
+            
             comic.EbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
             
             // Déplacement du fichier vers la racine de la librairie sélectionnée
