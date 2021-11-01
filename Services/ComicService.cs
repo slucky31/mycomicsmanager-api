@@ -1,12 +1,12 @@
 using MyComicsManagerApi.Models;
 using MongoDB.Driver;
 using System.Collections.Generic;
-using System.Linq;
 using Serilog;
 using System.IO;
-using System.Threading.Tasks;
 using System;
+using System.Globalization;
 using MyComicsManagerApi.DataParser;
+using MyComicsManagerApi.Utils;
 
 namespace MyComicsManagerApi.Services
 {
@@ -18,7 +18,7 @@ namespace MyComicsManagerApi.Services
 
         public ComicService(IDatabaseSettings settings, LibraryService libraryService, ComicFileService comicFileService)
         {
-            Log.Debug("settings = {@settings}", settings);
+            Log.Debug("settings = {Settings}", settings);
             var client = new MongoClient(settings.ConnectionString);
             var database = client.GetDatabase(settings.DatabaseName);
             _comics = database.GetCollection<Comic>(settings.ComicsCollectionName);
@@ -30,90 +30,139 @@ namespace MyComicsManagerApi.Services
             _comics.Find(comic => true).ToList();
 
         public Comic Get(string id) =>
-            _comics.Find<Comic>(comic => comic.Id == id).FirstOrDefault();
+            _comics.Find(comic => comic.Id == id).FirstOrDefault();
 
         public Comic Create(Comic comic)
         {
+            // Note du développeur : 
+            // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
 
-            string origin = Path.GetFullPath(_libraryService.GetFileUploadDirRootPath() + comic.EbookName);
-            
-
-            // TODO : Gérer le champ EbookPath en rélatif ou en absolu ???
-            // Mise à jour du champs EbookPath avec le champ relatif
-
-            // Si PDF, conversion en CBZ
-            // TODO : EbookPath ne devrait jamais être null,  car un comic ne peut exister sans fichier !
-            comic.EbookPath = origin;
-            _comicFileService.ConvertComicFileToCbz(comic);
-
-            string destination = Path.GetFullPath(_libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.FULL_PATH) + comic.EbookName);
-            try
+            if (comic.EbookName == null || comic.EbookPath == null)
             {
-
-                // TODO : Il faut faire qqch dans le cas où le fichier existe déjà dans la librairie !
-                // Changer le nom ?
-                while (File.Exists(destination))
-                {
-                    Log.Error("Le fichier {File} existe déjà", destination);
-                    comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
-                    comic.EbookName = comic.Title + Path.GetExtension(destination);
-                    Log.Error("Il va être renommé en {FileName}", comic.EbookName);
-                    destination = Path.GetFullPath(_libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.FULL_PATH) + comic.EbookName);
-                }
-
-                File.Move(comic.EbookPath, destination);
-                comic.EbookPath = destination;
-                //TODO : Gestion des exceptions
-            }
-            catch (Exception e)
-            {                
-                Log.Error("Erreur lors du dépalcement du fichier : {0}", e.Message);
-                Log.Error("Origin = {@origin}", comic.EbookPath);
-                Log.Error("Destination = {@destination}", destination);
+                Log.Error("Une des valeurs suivantes est null et ne devrait pas l'être");
+                Log.Error("EbookName : {Value}", comic.EbookName);
+                Log.Error("EbookPath : {Value}", comic.EbookPath);
                 return null;
             }
 
-            //Calcul du nombre d'images dans le fcihier CBZ
+            // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
+            _comicFileService.ConvertComicFileToCbz(comic);
+
+            // Déplacement du fichier vers la racine de la librairie sélectionnée
+            var destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
+                              comic.EbookName;
+            
+            // Gestion du cas où le fichier uploadé existe déjà dans la lib
+            while (File.Exists(destination))
+            {
+                Log.Warning("Le fichier {File} existe déjà", destination);
+                comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
+                comic.EbookName = comic.Title + Path.GetExtension(destination);
+                Log.Warning("Il va être renommé en {FileName}", comic.EbookName);
+                destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
+                              comic.EbookName;
+            }
+            
+            try
+            {
+                File.Move(comic.EbookPath, destination);
+            }
+            catch (Exception e)
+            {                
+                Log.Error(e,"Erreur lors du déplacement du fichier");
+                Log.Error("Origin = {Origin}", comic.EbookPath);
+                Log.Error("Destination = {Destination}", destination);
+                return null;
+            }
+            
+            // A partir de ce point, EbookPath doit être le chemin relatif par rapport à la librairie
+            comic.EbookPath = comic.EbookName;
+            
+            // Récupération des données du fichier ComicInfo.xml si il existe
+            if (_comicFileService.HasComicInfoInComicFile(comic))
+            {
+                comic = _comicFileService.ExtractDataFromComicInfo(comic);
+                UpdateDirectoryAndFileName(comic);
+            }
+
+            // Calcul du nombre d'images dans le fichier CBZ
             _comicFileService.SetNumberOfImagesInCbz(comic);
             
             // Insertion en base de données
             _comics.InsertOne(comic);
  
-            // Extraction de l'image de couverture        
+            // Extraction de l'image de couverture après enregistrement car nommé avec l'id du comic       
             _comicFileService.SetAndExtractCoverImage(comic);
-            var filter = Builders<Comic>.Filter.Eq(comic => comic.Id,comic.Id);
-            var update = Builders<Comic>.Update.Set(comic => comic.CoverPath, comic.CoverPath);            
-            this.UpdateField(filter, update);
+            Update(comic.Id, comic);
+            
+            // Création du fichier ComicInfo.xml
+            _comicFileService.AddComicInfoInComicFile(comic);
 
             return comic;
         }
 
         public void Update(string id, Comic comic)
         {
-            _comics.ReplaceOne(comic => comic.Id == id, comic);
+            UpdateDirectoryAndFileName(comic);
+
+            // Mise à jour en base de données
+            _comics.ReplaceOne(c => c.Id == id, comic);
+            
+            // Mise à jour du fichier ComicInfo.xml
+            _comicFileService.AddComicInfoInComicFile(comic);
         }
 
-        public void UpdateField(FilterDefinition<Comic> filter, UpdateDefinition<Comic> update)
+        private void UpdateDirectoryAndFileName(Comic comic)
         {
-            var options = new UpdateOptions { IsUpsert = true };
-            _comics.UpdateOne(filter, update, options);
+            // Mise à jour du nom du fichier
+            if (!string.IsNullOrEmpty(comic.Serie) && comic.Volume > 0)
+            {
+                // Calcul de l'origine
+                var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
+
+                // Mise à jour du nom du fichier pour le calcul de la destination
+                comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
+                var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
+                var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
+
+                // Renommage du fichier
+                File.Move(origin, libraryPath + comicEbookPath);
+
+                // Mise à jour du chemin relatif avec le nouveau nom du fichier 
+                comic.EbookPath = comicEbookPath;
+            }
+
+            // Mise à jour de l'arborescence du fichier
+            if (!string.IsNullOrEmpty(comic.Serie))
+            {
+                var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
+                var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
+                var eBookPath = comic.Serie.ToPascalCase() + Path.DirectorySeparatorChar;
+
+                // Création du répertoire de destination
+                Directory.CreateDirectory(libraryPath + eBookPath);
+
+                // Déplacement du fichier
+                File.Move(origin, libraryPath + eBookPath + comic.EbookName);
+                comic.EbookPath = eBookPath + comic.EbookName;
+            }
         }
 
         public void Remove(Comic comic)
         {
             // Suppression du fichier
-            Comic c = _comics.Find<Comic>(c => (c.Id == comic.Id) && (c.EbookPath == comic.EbookPath)).FirstOrDefault();
-            if (c != null) {    
+            Comic comicToDelete = _comics.Find(c => (c.Id == comic.Id)).FirstOrDefault();
+            if (comicToDelete != null) {    
                 
                 // Suppression du fichier
-                if (File.Exists(c.EbookPath)) {
-                    File.Delete(c.EbookPath);
+                if (File.Exists(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH))) {
+                    File.Delete(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH));
                 }
 
                 // Suppression de l'image de couverture
-                if (File.Exists(c.CoverPath))
+                if (File.Exists(comicToDelete.CoverPath))
                 {
-                    File.Delete(c.CoverPath);
+                    File.Delete(comicToDelete.CoverPath);
                 }
                 //TODO : Gestion des exceptions
             }
@@ -124,7 +173,7 @@ namespace MyComicsManagerApi.Services
 
         public void RemoveAllComicsFromLibrary(string libId)
         {            
-            List<Comic> comics = _comics.Find<Comic>(c => (c.LibraryId == libId)).ToList();
+            List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
             foreach(Comic c in comics) {
                 Remove(c);
             }
@@ -132,29 +181,75 @@ namespace MyComicsManagerApi.Services
 
         public void SearchComicInfoAndUpdate(Comic comic)
         {
-            if (!String.IsNullOrEmpty(comic.ISBN))
+            if (!String.IsNullOrEmpty(comic.Isbn))
             {
                 var parser = new BdphileComicHtmlDataParser();
-                var results = parser.Parse(comic.ISBN);
-                comic.Editor = results[ComicDataEnum.EDITEUR];
-                comic.ISBN = results[ComicDataEnum.ISBN];
-                comic.Penciller = results[ComicDataEnum.DESSINATEUR];
-                // comic.Published = results[ComicDataEnum.DATE_PARUTION]; // TODO : Conversion de date
-                comic.Review = int.Parse(results[ComicDataEnum.NOTE].Split(".")[0]); // TODO : Exception ?
-                comic.Serie = results[ComicDataEnum.SERIE];
-                comic.Title = results[ComicDataEnum.TITRE];
-                comic.Volume = results[ComicDataEnum.TOME];
-                comic.Writer = results[ComicDataEnum.SCENARISTE];
-                comic.FicheUrl = results[ComicDataEnum.URL];
-                comic.Colorist = results[ComicDataEnum.COLORISTE];
-                /* TODO : Liste des champs restants à gérer
-                - Category               
-                - LanguageISO
-                - PageCount
-                - Price */
-                Update(comic.Id, comic);
+                var results = parser.Parse(comic.Isbn);
+
+                if (results.Count > 0)
+                {
+
+                    // TODO : si la clé n'existe pas, on a un plantage ! Il faudrait gérer cela plus proprement !
+                    
+                    comic.Editor = results[ComicDataEnum.EDITEUR];
+                    comic.Isbn = results[ComicDataEnum.ISBN];
+                    comic.Penciller = results[ComicDataEnum.DESSINATEUR];
+                    comic.Serie = results[ComicDataEnum.SERIE];
+                    comic.Title = results[ComicDataEnum.TITRE];
+                    comic.Writer = results[ComicDataEnum.SCENARISTE];
+                    comic.FicheUrl = results[ComicDataEnum.URL];
+                    comic.Colorist = results[ComicDataEnum.COLORISTE];
+                    comic.LanguageIso = results[ComicDataEnum.LANGAGE];
+                    var frCulture = new CultureInfo("fr-FR");
+
+                    const DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
+                    if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
+                        dateTimeStyles, out var dateValue))
+                    {
+                        comic.Published = dateValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse de la date de publication : {DatePublication}", results[ComicDataEnum.DATE_PARUTION]);
+                    }
+
+                    if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
+                    {
+                        comic.Volume = intValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}", results[ComicDataEnum.TOME]);
+                    }
+
+                    const NumberStyles style = NumberStyles.AllowDecimalPoint;
+                    if (double.TryParse(results[ComicDataEnum.NOTE], style, CultureInfo.InvariantCulture, out var doubleValue))
+                    {
+                        comic.Review = doubleValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse de la note : {Note}", results[ComicDataEnum.NOTE]);
+                        comic.Review = -1;
+                    }
+                    
+                    if (double.TryParse(results[ComicDataEnum.PRIX].Split('€')[0], style, CultureInfo.InvariantCulture, out doubleValue))
+                    {
+                        comic.Price = doubleValue;
+                    }
+                    else
+                    {
+                        Log.Warning("Une erreur est apparue lors de l'analyse du prix : {Prix}", results[ComicDataEnum.PRIX]);
+                        comic.Review = -1;
+                    }
+                    
+                    Update(comic.Id, comic);
+                }
+                // TODO : throw Exception pour remonter côté WS ?
             }           
         }
+
+        
 
     }
 }

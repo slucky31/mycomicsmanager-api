@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using MyComicsManagerApi.Exceptions;
+using Serilog;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -118,6 +122,23 @@ namespace MyComicsManagerApi.DataParser
             }
         }
 
+        protected override string ExtractLangage()
+        {
+            if (IsOneShot)
+            {
+                return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span[2]");
+            }
+            else
+            {
+                return ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span");    
+            }
+        }
+        
+        protected override string ExtractPrix()
+        {
+            return ExtractedInfo.GetValueOrDefault("Format", "").Split('-').Last().Trim(); // TODO : Risque de plantage !!
+        }
+
         protected override string ExtractURL()
         {
             return FicheURL;
@@ -152,16 +173,41 @@ namespace MyComicsManagerApi.DataParser
             // https://www.bdphile.info/search/album/?q=9782365772013
             LoadDocument(BDPHILE_URL + isbn);
 
-            // Récupération de l'URL de la fiche du comic
-            FicheURL = ExtractAttributValue("/html/body/div[1]/section[2]/div/div[2]/a[1]", "href");
+            // Vérification que l'ISBN fourni donne bien au moins un résultat
+            var checkAlbum = ExtractTextValue("/html/body/div[1]/section[2]/div/div[1]/ul/li[2]/a/text()");
+            var checkNbAlbums = ExtractTextValue("/html/body/div[1]/section[2]/div/div[1]/ul/li[2]/a/span");
+            var nbAlbums = 0;
 
-            // Récupération de la page liée à l'ISBN recherché
-            LoadDocument(FicheURL);
+            try
+            {
+                nbAlbums = int.Parse(checkNbAlbums);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Erreur lors de l'interpération du nombre d'Albums {Nb} : {Exception}",checkNbAlbums, e);
+                throw new FormatException("Erreur lors de l'interpération du nombre d'Albums",e);
+            }
 
-            IsOneShot = "(one-shot)".Equals(ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span[1]"));
+            if ((checkAlbum == "Albums") && (nbAlbums > 0))
+            {
+                // Récupération de l'URL de la fiche du comic
+                FicheURL = ExtractAttributValue("/html/body/div[1]/section[2]/div/div[2]/a[1]", "href");
+                Log.Information("FicheURL = {FicheUrl}", FicheURL);
 
-            // Récupération du tableau contenant les informations (les éléments sans valeurs ne sont pas affichés)
-            extractDataTable();
+                // Récupération de la page liée à l'ISBN recherché
+                LoadDocument(FicheURL);
+
+                IsOneShot = "(one-shot)".Equals(
+                    ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span[1]"));
+
+                // Récupération du tableau contenant les informations (les éléments sans valeurs ne sont pas affichés)
+                extractDataTable();
+            }
+            else
+            {
+                throw new IsbnSearchNotFoundException("Aucun album trouvé pour l'isbn " + isbn);
+            }
+
         }
     }
 }

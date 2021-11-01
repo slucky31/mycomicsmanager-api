@@ -111,7 +111,7 @@ namespace MyComicsManagerApi.Controllers
 
             // Evitement de l'utilisation de await / async
             // https://visualstudiomagazine.com/Blogs/Tool-Tracker/2019/10/calling-methods-async.aspx
-            Task<List<string>> task = _comicFileService.ExtractISBNFromCbz(comic, indexImage);
+            Task<List<string>> task = _comicFileService.ExtractIsbnFromCbz(comic, indexImage);
             var isbnList = task.Result;
 
             return isbnList;

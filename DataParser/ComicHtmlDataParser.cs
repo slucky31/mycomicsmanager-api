@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Serilog;
 
 namespace MyComicsManagerApi.DataParser
 {
@@ -18,7 +20,9 @@ namespace MyComicsManagerApi.DataParser
         NOTE,
         FILE,
         ONESHOT,
-        VIGNETTE
+        VIGNETTE,
+        LANGAGE,
+        PRIX
     }
 
     public abstract class ComicHtmlDataParser : HtmlDataParser
@@ -32,11 +36,19 @@ namespace MyComicsManagerApi.DataParser
 
         public Dictionary<ComicDataEnum, string> Parse(string isbn)
         {
-            Search(isbn);
-            // TODO Exception ISBN Not Found !
-
+            
             ExtractedData.Clear();
-
+            
+            try
+            {
+                Search(isbn);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Aucune donnée n'a été remontée de la recherche !");
+                return ExtractedData;
+            }
+            
             ExtractedData.Add(ComicDataEnum.TITRE, ExtractTitre());
             ExtractedData.Add(ComicDataEnum.SERIE, ExtractSerie());
             ExtractedData.Add(ComicDataEnum.SERIE_URL, ExtractSerieUrl());
@@ -50,6 +62,8 @@ namespace MyComicsManagerApi.DataParser
             ExtractedData.Add(ComicDataEnum.EDITEUR, ExtractEditeur());
             ExtractedData.Add(ComicDataEnum.NOTE, ExtractNote());
             ExtractedData.Add(ComicDataEnum.ONESHOT, ExtractOneShot());
+            ExtractedData.Add(ComicDataEnum.LANGAGE, ExtractLangage());
+            ExtractedData.Add(ComicDataEnum.PRIX, ExtractPrix());
 
             return ExtractedData;
         }
@@ -81,6 +95,10 @@ namespace MyComicsManagerApi.DataParser
         protected abstract string ExtractEditeur();
 
         protected abstract string ExtractNote();
+        
+        protected abstract string ExtractLangage();
+        
+        protected abstract string ExtractPrix();
 
         protected abstract string ExtractSerieStatus();
     }
