@@ -30,19 +30,24 @@ namespace MyComicsManagerApi.Services
             _comics.Find(comic => true).ToList();
 
         public Comic Get(string id) =>
-            _comics.Find<Comic>(comic => comic.Id == id).FirstOrDefault();
+            _comics.Find(comic => comic.Id == id).FirstOrDefault();
 
         public Comic Create(Comic comic)
         {
-            // TODO : Faire une vérification sur les champs qui vont être utilisés plus tard : EbookName, EbookPath
-            // TODO : EbookPath ne devrait jamais être null,  car un comic ne peut exister sans fichier !
-            // TODO : Vérifier comment est créer un comic la première fois pour s'assurer que le EbookPath n'est pas null
+            // Note du développeur : 
+            // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
+
+            if (comic.EbookName == null || comic.EbookPath == null)
+            {
+                Log.Error("Une des valeurs suivantes est null et ne devrait pas l'être");
+                Log.Error("EbookName : {Value}", comic.EbookName);
+                Log.Error("EbookPath : {Value}", comic.EbookPath);
+                return null;
+            }
 
             // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
-            _comicFileService.ConvertComicFileToCbz(comic, comic.EbookPath);
-            
-            comic.EbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
-            
+            _comicFileService.ConvertComicFileToCbz(comic);
+
             // Déplacement du fichier vers la racine de la librairie sélectionnée
             var destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
                               comic.EbookName;
@@ -69,6 +74,8 @@ namespace MyComicsManagerApi.Services
                 Log.Error("Destination = {Destination}", destination);
                 return null;
             }
+            
+            // A partir de ce point, EbookPath doit être le chemin relatif par rapport à la librairie
             comic.EbookPath = comic.EbookName;
             
             // Récupération des données du fichier ComicInfo.xml si il existe
@@ -84,7 +91,7 @@ namespace MyComicsManagerApi.Services
             // Insertion en base de données
             _comics.InsertOne(comic);
  
-            // Extraction de l'image de couverture après enregristrement car nommé avec l'id du comic       
+            // Extraction de l'image de couverture après enregistrement car nommé avec l'id du comic       
             _comicFileService.SetAndExtractCoverImage(comic);
             Update(comic.Id, comic);
             
@@ -144,8 +151,8 @@ namespace MyComicsManagerApi.Services
         public void Remove(Comic comic)
         {
             // Suppression du fichier
-            Comic c = _comics.Find<Comic>(c => (c.Id == comic.Id)).FirstOrDefault();
-            if (c != null) {    
+            Comic comicToDelete = _comics.Find(c => (c.Id == comic.Id)).FirstOrDefault();
+            if (comicToDelete != null) {    
                 
                 // Suppression du fichier
                 if (File.Exists(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH))) {
@@ -153,9 +160,9 @@ namespace MyComicsManagerApi.Services
                 }
 
                 // Suppression de l'image de couverture
-                if (File.Exists(c.CoverPath))
+                if (File.Exists(comicToDelete.CoverPath))
                 {
-                    File.Delete(c.CoverPath);
+                    File.Delete(comicToDelete.CoverPath);
                 }
                 //TODO : Gestion des exceptions
             }
@@ -166,7 +173,7 @@ namespace MyComicsManagerApi.Services
 
         public void RemoveAllComicsFromLibrary(string libId)
         {            
-            List<Comic> comics = _comics.Find<Comic>(c => (c.LibraryId == libId)).ToList();
+            List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
             foreach(Comic c in comics) {
                 Remove(c);
             }
@@ -174,10 +181,10 @@ namespace MyComicsManagerApi.Services
 
         public void SearchComicInfoAndUpdate(Comic comic)
         {
-            if (!String.IsNullOrEmpty(comic.ISBN))
+            if (!String.IsNullOrEmpty(comic.Isbn))
             {
                 var parser = new BdphileComicHtmlDataParser();
-                var results = parser.Parse(comic.ISBN);
+                var results = parser.Parse(comic.Isbn);
 
                 if (results.Count > 0)
                 {
@@ -185,26 +192,25 @@ namespace MyComicsManagerApi.Services
                     // TODO : si la clé n'existe pas, on a un plantage ! Il faudrait gérer cela plus proprement !
                     
                     comic.Editor = results[ComicDataEnum.EDITEUR];
-                    comic.ISBN = results[ComicDataEnum.ISBN];
+                    comic.Isbn = results[ComicDataEnum.ISBN];
                     comic.Penciller = results[ComicDataEnum.DESSINATEUR];
                     comic.Serie = results[ComicDataEnum.SERIE];
                     comic.Title = results[ComicDataEnum.TITRE];
                     comic.Writer = results[ComicDataEnum.SCENARISTE];
                     comic.FicheUrl = results[ComicDataEnum.URL];
                     comic.Colorist = results[ComicDataEnum.COLORISTE];
-                    comic.LanguageISO = results[ComicDataEnum.LANGAGE];
+                    comic.LanguageIso = results[ComicDataEnum.LANGAGE];
                     var frCulture = new CultureInfo("fr-FR");
-                    
-                    DateTime dateValue;
-                    DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
+
+                    const DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
                     if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
-                        dateTimeStyles, out dateValue))
+                        dateTimeStyles, out var dateValue))
                     {
                         comic.Published = dateValue;
                     }
                     else
                     {
-                        Log.Warning("Une erreur est apparue lors de l'analyse de la date de publication : {datePublication}", results[ComicDataEnum.DATE_PARUTION]);
+                        Log.Warning("Une erreur est apparue lors de l'analyse de la date de publication : {DatePublication}", results[ComicDataEnum.DATE_PARUTION]);
                     }
 
                     if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
