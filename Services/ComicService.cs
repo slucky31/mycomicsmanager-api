@@ -89,6 +89,8 @@ namespace MyComicsManagerApi.Services
             _comicFileService.SetNumberOfImagesInCbz(comic);
             
             // Insertion en base de données
+            comic.Added = DateTime.Now;
+            comic.Edited = comic.Added;
             _comics.InsertOne(comic);
  
             // Extraction de l'image de couverture après enregistrement car nommé avec l'id du comic       
@@ -106,6 +108,7 @@ namespace MyComicsManagerApi.Services
             UpdateDirectoryAndFileName(comic);
 
             // Mise à jour en base de données
+            comic.Edited = DateTime.Now;
             _comics.ReplaceOne(c => c.Id == id, comic);
             
             // Mise à jour du fichier ComicInfo.xml
