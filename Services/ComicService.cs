@@ -65,16 +65,13 @@ namespace MyComicsManagerApi.Services
             
             try
             {
-                File.Move(comic.EbookPath, destination);
+                ComicUtils.MoveComic(comic.EbookPath, destination);
             }
-            catch (Exception e)
-            {                
-                Log.Error(e,"Erreur lors du déplacement du fichier");
-                Log.Error("Origin = {Origin}", comic.EbookPath);
-                Log.Error("Destination = {Destination}", destination);
+            catch (Exception)
+            {
                 return null;
             }
-            
+
             // A partir de ce point, EbookPath doit être le chemin relatif par rapport à la librairie
             comic.EbookPath = comic.EbookName;
             
@@ -128,9 +125,9 @@ namespace MyComicsManagerApi.Services
                 var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
                 var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
 
-                // Renommage du fichier
-                File.Move(origin, libraryPath + comicEbookPath);
-
+                // Renommage du fichier (si le fichier existe déjà, on ne fait rien, car il est déjà présent !)
+                ComicUtils.MoveComic(origin, libraryPath + comicEbookPath);
+                
                 // Mise à jour du chemin relatif avec le nouveau nom du fichier 
                 comic.EbookPath = comicEbookPath;
             }
@@ -145,8 +142,8 @@ namespace MyComicsManagerApi.Services
                 // Création du répertoire de destination
                 Directory.CreateDirectory(libraryPath + eBookPath);
 
-                // Déplacement du fichier
-                File.Move(origin, libraryPath + eBookPath + comic.EbookName);
+                // Déplacement du fichier (si le fichier existe déjà, on ne fait rien, car il est déjà présent !)
+                ComicUtils.MoveComic(origin, libraryPath + eBookPath + comic.EbookName);
                 comic.EbookPath = eBookPath + comic.EbookName;
             }
         }
