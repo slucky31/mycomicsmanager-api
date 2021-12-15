@@ -8,9 +8,9 @@ namespace MyComicsManagerApiTests
     {
         
         private HtmlDataParser Parser { get; set; }
-        private const string TitleXPath = "/html/body/div[5]/div/div/div/section/div/div/h1";
-        
-        
+        private const string TitleXPath = "/html/body/div[6]/div/div/div/section/div/div/h1";
+
+
         [Fact]
         public void ExtractTextValue()
         {
