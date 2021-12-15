@@ -6,6 +6,7 @@ using System.IO;
 using System;
 using System.Globalization;
 using MyComicsManagerApi.DataParser;
+using MyComicsManagerApi.Exceptions;
 using MyComicsManagerApi.Utils;
 
 namespace MyComicsManagerApi.Services
@@ -65,7 +66,7 @@ namespace MyComicsManagerApi.Services
             
             try
             {
-                ComicUtils.MoveComic(comic.EbookPath, destination);
+                MoveComic(comic.EbookPath, destination);
             }
             catch (Exception)
             {
@@ -79,7 +80,14 @@ namespace MyComicsManagerApi.Services
             if (_comicFileService.HasComicInfoInComicFile(comic))
             {
                 comic = _comicFileService.ExtractDataFromComicInfo(comic);
-                UpdateDirectoryAndFileName(comic);
+                try
+                {
+                    UpdateDirectoryAndFileName(comic);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
 
             // Calcul du nombre d'images dans le fichier CBZ
@@ -126,7 +134,7 @@ namespace MyComicsManagerApi.Services
                 var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
 
                 // Renommage du fichier (si le fichier existe déjà, on ne fait rien, car il est déjà présent !)
-                ComicUtils.MoveComic(origin, libraryPath + comicEbookPath);
+                MoveComic(origin, libraryPath + comicEbookPath);
                 
                 // Mise à jour du chemin relatif avec le nouveau nom du fichier 
                 comic.EbookPath = comicEbookPath;
@@ -143,7 +151,7 @@ namespace MyComicsManagerApi.Services
                 Directory.CreateDirectory(libraryPath + eBookPath);
 
                 // Déplacement du fichier (si le fichier existe déjà, on ne fait rien, car il est déjà présent !)
-                ComicUtils.MoveComic(origin, libraryPath + eBookPath + comic.EbookName);
+                MoveComic(origin, libraryPath + eBookPath + comic.EbookName);
                 comic.EbookPath = eBookPath + comic.EbookName;
             }
         }
@@ -247,6 +255,35 @@ namespace MyComicsManagerApi.Services
                 }
                 // TODO : throw Exception pour remonter côté WS ?
             }           
+        }
+        
+        private void MoveComic(string origin, string destination)
+        {
+            try
+            {
+                File.Move(origin, destination);
+            }
+            catch (Exception e)
+            {                
+                Log.Error(e,"Erreur lors du déplacement du fichier {Origin} vers {Destination}" ,origin, destination);
+                
+                // Création du répertoire de destination
+                var errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors";
+                Directory.CreateDirectory(errorPath);
+                
+                errorPath += Path.DirectorySeparatorChar + Path.GetFileName(destination);
+                while (File.Exists(errorPath))
+                {
+                    Log.Warning("Le fichier {File} existe déjà", destination);
+                    string fileName = Path.GetFileNameWithoutExtension(destination) + "-Duplicate";
+                    fileName += Path.GetExtension(destination);
+                    Log.Warning("Il va être renommé en {FileName}", fileName);
+                    errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors" + Path.DirectorySeparatorChar + fileName;
+                }
+                File.Move(origin, errorPath);
+                Log.Error(e,"Le fichier {Origin} a été déplacé dans {Destination}" ,origin, errorPath);
+                throw new ComicIoException("Erreur lors du déplacement du fichier. Consulter le répertoire errors.", e);
+            }
         }
 
         
