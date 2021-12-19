@@ -22,6 +22,18 @@ namespace MyComicsManagerApi.Controllers
         [HttpGet]
         public ActionResult<List<Comic>> Get() =>
             _comicService.Get();
+        
+        [HttpGet("random/limit/{limit:int}")]
+        public ActionResult<List<Comic>> GetRandomLimitBy(int limit) =>
+            _comicService.GetRandomLimitBy(limit);
+        
+        [HttpGet("withoutIsbn/limit/{limit:int}")]
+        public ActionResult<List<Comic>> ListComicsWithoutIsbnLimitBy(int limit) =>
+            _comicService.GetWithoutIsbnLimitBy(limit);
+        
+        [HttpGet("orderBy/lastAdded/limit/{limit:int}")]
+        public ActionResult<List<Comic>> ListComicsOrderByLastAddedLimitBy(int limit) =>
+            _comicService.GetOrderByLastAddedLimitBy(limit);
 
         [HttpGet("{id:length(24)}", Name = "GetComic")]
         public ActionResult<Comic> Get(string id)

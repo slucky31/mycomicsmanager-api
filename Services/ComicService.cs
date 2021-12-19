@@ -5,6 +5,7 @@ using Serilog;
 using System.IO;
 using System;
 using System.Globalization;
+using System.Linq;
 using MyComicsManagerApi.DataParser;
 using MyComicsManagerApi.Exceptions;
 using MyComicsManagerApi.Utils;
@@ -16,6 +17,7 @@ namespace MyComicsManagerApi.Services
         private readonly IMongoCollection<Comic> _comics;
         private readonly LibraryService _libraryService;
         private readonly ComicFileService _comicFileService;
+        const int MAX_COMICS_PER_REQUEST = 100;
 
         public ComicService(IDatabaseSettings settings, LibraryService libraryService, ComicFileService comicFileService)
         {
@@ -29,10 +31,23 @@ namespace MyComicsManagerApi.Services
 
         public List<Comic> Get() =>
             _comics.Find(comic => true).ToList();
+        
+        public List<Comic> GetOrderByLastAddedLimitBy(int limit) =>
+            _comics.Find(comic => true).SortByDescending(comic => comic.Added).Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+        
+        public List<Comic> GetWithoutIsbnLimitBy(int limit) =>
+            _comics.Find(comic => string.IsNullOrEmpty(comic.Isbn)).SortBy(comic => comic.Added).Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+
+        public List<Comic> GetRandomLimitBy(int limit)
+        {
+            var list = _comics.Find(comic => true).ToList();
+            return list.OrderBy(arg => Guid.NewGuid()).Take(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+        }
+            
 
         public Comic Get(string id) =>
             _comics.Find(comic => comic.Id == id).FirstOrDefault();
-
+        
         public Comic Create(Comic comic)
         {
             // Note du développeur : 
