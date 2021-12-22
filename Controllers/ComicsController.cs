@@ -82,13 +82,16 @@ namespace MyComicsManagerApi.Controllers
         public ActionResult<Comic> SearchComicInfo(string id)
         {
             var comic = _comicService.Get(id);
-
             if (comic == null)
             {
                 return NotFound();
             }
 
-            _comicService.SearchComicInfoAndUpdate(comic);
+            comic = _comicService.SearchComicInfoAndUpdate(comic);
+            if (comic == null)
+            {
+                return NotFound();
+            }
 
             return _comicService.Get(id);
         }
@@ -127,6 +130,20 @@ namespace MyComicsManagerApi.Controllers
             var isbnList = task.Result;
 
             return isbnList;
+        }
+        
+        [HttpGet("extractTitle/{id:length(24)}")]
+        public ActionResult<string> ExtractTitle(string id)
+        {
+            var comic = _comicService.Get(id);
+
+            if (comic == null)
+            {
+                return NotFound();
+            }
+            
+            var task = _comicFileService.ExtractTitleFromCbz(comic);
+            return task.Result;
         }
 
         [HttpGet("extractimages/{id:length(24)}&{nbImagesToExtract:int}&{first:bool}")]

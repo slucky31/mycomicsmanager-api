@@ -257,6 +257,21 @@ namespace MyComicsManagerApi.Services
             }    
             return isbnList;        
         }
+        
+        public async Task<string> ExtractTitleFromCbz(Comic comic)
+        {
+            var tempDir = CreateTempDirectory();
+            Log.Information("tempDir : {Dir}", tempDir);
+
+            // Extraction des infos de la page de couverture
+            var imagePath = ExtractImageFromCbz(comic, tempDir, 0);
+            Log.Information("imagePath : {Path}", imagePath);
+
+            var extractedText = await _computerVisionService.ReadTextFromLocalImage(imagePath);
+            Log.Information("extractedText : {Text}", extractedText);
+
+            return extractedText;
+        }
 
         public bool HasComicInfoInComicFile(Comic comic)
         {

@@ -202,74 +202,82 @@ namespace MyComicsManagerApi.Services
             }
         }
 
-        public void SearchComicInfoAndUpdate(Comic comic)
+        public Comic SearchComicInfoAndUpdate(Comic comic)
         {
-            if (!String.IsNullOrEmpty(comic.Isbn))
+            if (string.IsNullOrEmpty(comic.Isbn))
             {
-                var parser = new BdphileComicHtmlDataParser();
-                var results = parser.Parse(comic.Isbn);
+                return null;
+            }
 
-                if (results.Count > 0)
-                {
+            var parser = new BdphileComicHtmlDataParser();
+            var results = parser.Parse(comic.Isbn);
 
-                    // TODO : si la clé n'existe pas, on a un plantage ! Il faudrait gérer cela plus proprement !
-                    
-                    comic.Editor = results[ComicDataEnum.EDITEUR];
-                    comic.Isbn = results[ComicDataEnum.ISBN];
-                    comic.Penciller = results[ComicDataEnum.DESSINATEUR];
-                    comic.Serie = results[ComicDataEnum.SERIE];
-                    comic.Title = results[ComicDataEnum.TITRE];
-                    comic.Writer = results[ComicDataEnum.SCENARISTE];
-                    comic.FicheUrl = results[ComicDataEnum.URL];
-                    comic.Colorist = results[ComicDataEnum.COLORISTE];
-                    comic.LanguageIso = results[ComicDataEnum.LANGAGE];
-                    var frCulture = new CultureInfo("fr-FR");
+            if (results.Count == 0)
+            {
+                return null;
+            }
 
-                    const DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
-                    if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
-                        dateTimeStyles, out var dateValue))
-                    {
-                        comic.Published = dateValue;
-                    }
-                    else
-                    {
-                        Log.Warning("Une erreur est apparue lors de l'analyse de la date de publication : {DatePublication}", results[ComicDataEnum.DATE_PARUTION]);
-                    }
+            comic.Editor = results[ComicDataEnum.EDITEUR];
+            comic.Isbn = results[ComicDataEnum.ISBN];
+            comic.Penciller = results[ComicDataEnum.DESSINATEUR];
+            comic.Serie = results[ComicDataEnum.SERIE];
+            comic.Title = results[ComicDataEnum.TITRE];
+            comic.Writer = results[ComicDataEnum.SCENARISTE];
+            comic.FicheUrl = results[ComicDataEnum.URL];
+            comic.Colorist = results[ComicDataEnum.COLORISTE];
+            comic.LanguageIso = results[ComicDataEnum.LANGAGE];
+            var frCulture = new CultureInfo("fr-FR");
 
-                    if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
-                    {
-                        comic.Volume = intValue;
-                    }
-                    else
-                    {
-                        Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}", results[ComicDataEnum.TOME]);
-                    }
+            const DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
+            if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
+                    dateTimeStyles, out var dateValue))
+            {
+                comic.Published = dateValue;
+            }
+            else
+            {
+                Log.Warning(
+                    "Une erreur est apparue lors de l'analyse de la date de publication : {DatePublication}",
+                    results[ComicDataEnum.DATE_PARUTION]);
+            }
 
-                    const NumberStyles style = NumberStyles.AllowDecimalPoint;
-                    if (double.TryParse(results[ComicDataEnum.NOTE], style, CultureInfo.InvariantCulture, out var doubleValue))
-                    {
-                        comic.Review = doubleValue;
-                    }
-                    else
-                    {
-                        Log.Warning("Une erreur est apparue lors de l'analyse de la note : {Note}", results[ComicDataEnum.NOTE]);
-                        comic.Review = -1;
-                    }
-                    
-                    if (double.TryParse(results[ComicDataEnum.PRIX].Split('€')[0], style, CultureInfo.InvariantCulture, out doubleValue))
-                    {
-                        comic.Price = doubleValue;
-                    }
-                    else
-                    {
-                        Log.Warning("Une erreur est apparue lors de l'analyse du prix : {Prix}", results[ComicDataEnum.PRIX]);
-                        comic.Review = -1;
-                    }
-                    
-                    Update(comic.Id, comic);
-                }
-                // TODO : throw Exception pour remonter côté WS ?
-            }           
+            if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
+            {
+                comic.Volume = intValue;
+            }
+            else
+            {
+                Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
+                    results[ComicDataEnum.TOME]);
+            }
+
+            const NumberStyles style = NumberStyles.AllowDecimalPoint;
+            if (double.TryParse(results[ComicDataEnum.NOTE], style, CultureInfo.InvariantCulture,
+                    out var doubleValue))
+            {
+                comic.Review = doubleValue;
+            }
+            else
+            {
+                Log.Warning("Une erreur est apparue lors de l'analyse de la note : {Note}",
+                    results[ComicDataEnum.NOTE]);
+                comic.Review = -1;
+            }
+
+            if (double.TryParse(results[ComicDataEnum.PRIX].Split('€')[0], style, CultureInfo.InvariantCulture,
+                    out doubleValue))
+            {
+                comic.Price = doubleValue;
+            }
+            else
+            {
+                Log.Warning("Une erreur est apparue lors de l'analyse du prix : {Prix}",
+                    results[ComicDataEnum.PRIX]);
+                comic.Review = -1;
+            }
+
+            Update(comic.Id, comic);
+            return comic;
         }
         
         private void MoveComic(string origin, string destination)
