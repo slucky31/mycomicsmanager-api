@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using MyComicsManagerApi.Exceptions;
 using Serilog;
@@ -168,7 +169,8 @@ namespace MyComicsManagerApi.DataParser
             {
                 if (ddNodes[i].Attributes["class"] != null && ddNodes[i].Attributes["class"].Value == "second")
                 {
-                    ddValues[lastIndex] += ", " + ddNodes[i].InnerText;
+                    var bld = new StringBuilder();
+                    ddValues[lastIndex] = bld.Append(ddValues[lastIndex]).Append(", ").Append(ddNodes[i].InnerText).ToString();
                 }
                 else
                 {
