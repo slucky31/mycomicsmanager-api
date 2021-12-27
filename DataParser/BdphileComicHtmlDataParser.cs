@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using MyComicsManagerApi.Exceptions;
 using Serilog;
@@ -160,10 +161,28 @@ namespace MyComicsManagerApi.DataParser
             // https://stackoverflow.com/questions/10583926/html-agility-pack-selectnodes-from-a-node
             var ddNodes = selectedNode.SelectNodes(".//dd");
 
+            // On peut avoir plus de dd que de dt !
+            // Fusion de dd avec les dd ayant la classe "second"
+            var lastIndex = 0;
+            List<string> ddValues = new List<string>();
+            for (int i = 0; i < ddNodes.Count; i++)
+            {
+                if (ddNodes[i].Attributes["class"] != null && ddNodes[i].Attributes["class"].Value == "second")
+                {
+                    var bld = new StringBuilder();
+                    ddValues[lastIndex] = bld.Append(ddValues[lastIndex]).Append(", ").Append(ddNodes[i].InnerText).ToString();
+                }
+                else
+                {
+                    ddValues.Add(ddNodes[i].InnerText);
+                    lastIndex = ddValues.Count - 1;
+                }
+            }
+            
             // On stocke le tout dans un dictionnaire
             for (int i = 0; i < dtNodes.Count; i++)
             {
-                ExtractedInfo.Add(dtNodes[i].InnerText, ddNodes[i].InnerText);
+                ExtractedInfo.Add(dtNodes[i].InnerText, ddValues[i]);
             }
         }
 
