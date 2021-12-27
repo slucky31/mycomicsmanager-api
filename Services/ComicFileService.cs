@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using MyComicsManagerApi.Exceptions;
 using SharpCompress.Archives.Rar;
-using SharpCompress.Archives.SevenZip;
 using UglyToad.PdfPig;
 
 namespace MyComicsManagerApi.Services
@@ -96,10 +95,11 @@ namespace MyComicsManagerApi.Services
                 throw new ArgumentOutOfRangeException(nameof(imageIndex),
                     "imageIndex (" + imageIndex + ") doit être compris entre 0 et " + archive.Entries.Count + ".");
             }
-
+            
+            var extensions = new[] { ".jpg", ".png", ".gif", ".webp" };
             var images = archive.Entries
-                .Where(s => s.FullName.EndsWith(".jpg") || s.FullName.EndsWith(".png") || s.FullName.EndsWith(".gif") ||
-                            s.FullName.EndsWith(".webp")).OrderBy(s => s.FullName);
+                .Where(file => extensions.Any(x => file.FullName.EndsWith(x, StringComparison.OrdinalIgnoreCase))).OrderBy(s => s.FullName);
+
             ZipArchiveEntry entry = images.ElementAt(imageIndex);
             Log.Information("Fichier à extraire {FileName}", entry.FullName);
             var destinationPath = Path.GetFullPath(Path.Combine(extractPath,
@@ -136,7 +136,7 @@ namespace MyComicsManagerApi.Services
                     {
                         ExtractImagesFromCbz(comic.EbookPath, tempDir);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Log.Error("Erreur lors de l'extraction des images à partir du fichier CBZ {File}", comic.EbookPath);
                         throw;
@@ -171,21 +171,33 @@ namespace MyComicsManagerApi.Services
 
             comic.EbookPath = Path.ChangeExtension(comic.EbookPath, ".cbz");
             Log.Information("comic.EbookPath = {Path}", comic.EbookPath);
-
-            // Création de l'archive à partir du répertoire
-            // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
-            // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
-
-            var images = Directory.GetFiles(tempDir, "*.*", SearchOption.AllDirectories)
-                .Where(s => s.EndsWith(".jpg") || s.EndsWith(".png") || s.EndsWith(".gif") || s.EndsWith(".webp") ||
-                            s.EndsWith(".xml"));
+            
+            // Déplacement des images au même niveau dans un répertoire archive
+            var extractedFiles = Directory.EnumerateFiles(tempDir, "*.*", SearchOption.AllDirectories).ToList();
+            var archiveDirectoryPath = Path.Combine(tempDir, "archive");
+            Directory.CreateDirectory(archiveDirectoryPath);
+            foreach (var file in extractedFiles)
+            {
+                // Passage du nom du fichier en minuscule
+                var destination = Path.Combine(archiveDirectoryPath, Path.GetFileName(file).ToLower());
+                File.Move(file, destination, true);
+            }
 
             if (comic.EbookPath != null)
             {
+                // Création de l'archive à partir du répertoire
+                // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
+                // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
+                
+                var extensions = new[] { ".jpg", ".png", ".gif", ".webp", ".xml" };
+                var filesToArchive = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
+                    .Where(file => extensions.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
+                
+                // Construction de l'archive
                 using var archive = ZipFile.Open(comic.EbookPath, ZipArchiveMode.Create);
-                foreach (var image in images)
+                foreach (var file in filesToArchive)
                 {
-                    var entry = archive.CreateEntryFromFile(image, Path.GetFileName(image), CompressionLevel.Optimal);
+                    var entry = archive.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
                     Log.Information("{FullName} was compressed", entry.FullName);
                 }
             }
