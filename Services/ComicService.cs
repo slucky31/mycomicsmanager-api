@@ -19,7 +19,8 @@ namespace MyComicsManagerApi.Services
         private readonly ComicFileService _comicFileService;
         const int MAX_COMICS_PER_REQUEST = 100;
 
-        public ComicService(IDatabaseSettings settings, LibraryService libraryService, ComicFileService comicFileService)
+        public ComicService(IDatabaseSettings settings, LibraryService libraryService,
+            ComicFileService comicFileService)
         {
             Log.Debug("settings = {Settings}", settings);
             var client = new MongoClient(settings.ConnectionString);
@@ -31,23 +32,26 @@ namespace MyComicsManagerApi.Services
 
         public List<Comic> Get() =>
             _comics.Find(comic => true).ToList();
-        
+
         public List<Comic> GetOrderByLastAddedLimitBy(int limit) =>
-            _comics.Find(comic => true).SortByDescending(comic => comic.Added).Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
-        
+            _comics.Find(comic => true).SortByDescending(comic => comic.Added)
+                .Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+
         public List<Comic> GetWithoutIsbnLimitBy(int limit) =>
-            _comics.Find(comic => string.IsNullOrEmpty(comic.Isbn)).SortBy(comic => comic.Added).Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+            _comics.Find(comic => string.IsNullOrEmpty(comic.Isbn)).SortBy(comic => comic.Added)
+                .Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
 
         public List<Comic> GetRandomLimitBy(int limit)
         {
             var list = _comics.Find(comic => true).ToList();
-            return list.OrderBy(arg => Guid.NewGuid()).Take(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+            return list.OrderBy(arg => Guid.NewGuid())
+                .Take(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
         }
-            
+
 
         public Comic Get(string id) =>
             _comics.Find(comic => comic.Id == id).FirstOrDefault();
-        
+
         public Comic Create(Comic comic)
         {
             // Note du développeur : 
@@ -62,12 +66,20 @@ namespace MyComicsManagerApi.Services
             }
 
             // Conversion du fichier en CBZ et mise à jour du path car le nom du fichier peut avoir changer
-            _comicFileService.ConvertComicFileToCbz(comic);
+            try
+            {
+                _comicFileService.ConvertComicFileToCbz(comic);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Erreur lors de la conversion en CBZ");
+                return null;
+            }
 
             // Déplacement du fichier vers la racine de la librairie sélectionnée
             var destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
                               comic.EbookName;
-            
+
             // Gestion du cas où le fichier uploadé existe déjà dans la lib
             while (File.Exists(destination))
             {
@@ -78,7 +90,7 @@ namespace MyComicsManagerApi.Services
                 destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
                               comic.EbookName;
             }
-            
+
             try
             {
                 MoveComic(comic.EbookPath, destination);
@@ -90,7 +102,7 @@ namespace MyComicsManagerApi.Services
 
             // A partir de ce point, EbookPath doit être le chemin relatif par rapport à la librairie
             comic.EbookPath = comic.EbookName;
-            
+
             // Récupération des données du fichier ComicInfo.xml si il existe
             if (_comicFileService.HasComicInfoInComicFile(comic))
             {
@@ -107,16 +119,16 @@ namespace MyComicsManagerApi.Services
 
             // Calcul du nombre d'images dans le fichier CBZ
             _comicFileService.SetNumberOfImagesInCbz(comic);
-            
+
             // Insertion en base de données
             comic.Added = DateTime.Now;
             comic.Edited = comic.Added;
             _comics.InsertOne(comic);
- 
+
             // Extraction de l'image de couverture après enregistrement car nommé avec l'id du comic       
             _comicFileService.SetAndExtractCoverImage(comic);
             Update(comic.Id, comic);
-            
+
             // Création du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
 
@@ -130,7 +142,7 @@ namespace MyComicsManagerApi.Services
             // Mise à jour en base de données
             comic.Edited = DateTime.Now;
             _comics.ReplaceOne(c => c.Id == id, comic);
-            
+
             // Mise à jour du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
         }
@@ -145,12 +157,14 @@ namespace MyComicsManagerApi.Services
 
                 // Mise à jour du nom du fichier pour le calcul de la destination
                 comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
-                var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
-                var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar + comic.EbookName;
+                var libraryPath =
+                    _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
+                var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar +
+                                     comic.EbookName;
 
                 // Renommage du fichier (si le fichier existe déjà, on ne fait rien, car il est déjà présent !)
                 MoveComic(origin, libraryPath + comicEbookPath);
-                
+
                 // Mise à jour du chemin relatif avec le nouveau nom du fichier 
                 comic.EbookPath = comicEbookPath;
             }
@@ -159,7 +173,8 @@ namespace MyComicsManagerApi.Services
             if (!string.IsNullOrEmpty(comic.Serie))
             {
                 var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
-                var libraryPath = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
+                var libraryPath =
+                    _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
                 var eBookPath = comic.Serie.ToPascalCase() + Path.DirectorySeparatorChar;
 
                 // Création du répertoire de destination
@@ -175,10 +190,11 @@ namespace MyComicsManagerApi.Services
         {
             // Suppression du fichier
             Comic comicToDelete = _comics.Find(c => (c.Id == comic.Id)).FirstOrDefault();
-            if (comicToDelete != null) {    
-                
+            if (comicToDelete != null)
+            {
                 // Suppression du fichier
-                if (File.Exists(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH))) {
+                if (File.Exists(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH)))
+                {
                     File.Delete(_comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH));
                 }
 
@@ -195,9 +211,10 @@ namespace MyComicsManagerApi.Services
         }
 
         public void RemoveAllComicsFromLibrary(string libId)
-        {            
+        {
             List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
-            foreach(Comic c in comics) {
+            foreach (Comic c in comics)
+            {
                 Remove(c);
             }
         }
@@ -279,7 +296,7 @@ namespace MyComicsManagerApi.Services
             Update(comic.Id, comic);
             return comic;
         }
-        
+
         private void MoveComic(string origin, string destination)
         {
             try
@@ -287,29 +304,11 @@ namespace MyComicsManagerApi.Services
                 File.Move(origin, destination);
             }
             catch (Exception e)
-            {                
-                Log.Error(e,"Erreur lors du déplacement du fichier {Origin} vers {Destination}" ,origin, destination);
-                
-                // Création du répertoire de destination
-                var errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors";
-                Directory.CreateDirectory(errorPath);
-                
-                errorPath += Path.DirectorySeparatorChar + Path.GetFileName(destination);
-                while (File.Exists(errorPath))
-                {
-                    Log.Warning("Le fichier {File} existe déjà", destination);
-                    string fileName = Path.GetFileNameWithoutExtension(destination) + "-Duplicate";
-                    fileName += Path.GetExtension(destination);
-                    Log.Warning("Il va être renommé en {FileName}", fileName);
-                    errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors" + Path.DirectorySeparatorChar + fileName;
-                }
-                File.Move(origin, errorPath);
-                Log.Error(e,"Le fichier {Origin} a été déplacé dans {Destination}" ,origin, errorPath);
+            {
+                Log.Error("Erreur lors du déplacement du fichier {Origin} vers {Destination}", origin, destination);
+                _comicFileService.MoveInErrorsDir(origin, e);
                 throw new ComicIoException("Erreur lors du déplacement du fichier. Consulter le répertoire errors.", e);
             }
         }
-
-        
-
     }
 }

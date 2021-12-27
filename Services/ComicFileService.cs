@@ -11,6 +11,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using MyComicsManagerApi.Exceptions;
+using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
 using UglyToad.PdfPig;
 
 namespace MyComicsManagerApi.Services
@@ -122,13 +125,22 @@ namespace MyComicsManagerApi.Services
         {
             var tempDir = CreateTempDirectory();
 
-            // Extraction des images du PDF
-            var extension = Path.GetExtension(comic.EbookPath);
+            // Extraction des images
+            var extension = GetArchiveType(comic);
             switch (extension)
             {
                 case ".cbz":
+                case ".zip" :
                     Log.Information("ExtractImagesFromCbz");
-                    ExtractImagesFromCbz(comic.EbookPath, tempDir);
+                    try
+                    {
+                        ExtractImagesFromCbz(comic.EbookPath, tempDir);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Erreur lors de l'extraction des images à partir du fichier CBZ {File}", comic.EbookPath);
+                        throw;
+                    }
                     break;
 
                 case ".pdf":
@@ -137,6 +149,7 @@ namespace MyComicsManagerApi.Services
                     break;
 
                 case ".cbr":
+                case ".rar":
                     Log.Information("ExtractImagesFromCbr");
                     ExtractImagesFromCbr(comic.EbookPath, tempDir);
                     break;
@@ -193,7 +206,17 @@ namespace MyComicsManagerApi.Services
 
         private void ExtractImagesFromCbz(string comicEbookPath, string tempDir)
         {
-            ZipFile.ExtractToDirectory(comicEbookPath, tempDir, overwriteFiles: true);
+            try
+            {
+                ZipFile.ExtractToDirectory(comicEbookPath, tempDir, overwriteFiles: true);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Erreur lors de l'extraction de l'archive {Archive}",comicEbookPath);
+                MoveInErrorsDir(comicEbookPath, e);
+                throw new ComicIoException("Erreur lors de l'extraction de l'archive. Consulter le répertoire errors.", e);
+            }
+            
         }
 
         private void ExtractImagesFromPdf(string comicEbookPath, string tempDir)
@@ -394,6 +417,42 @@ namespace MyComicsManagerApi.Services
         public string GetComicEbookPath(Comic comic, LibraryService.PathType pathType)
         {
             return _libraryService.GetLibraryPath(comic.LibraryId, pathType) + comic.EbookPath;
+        }
+
+        public string GetArchiveType(Comic comic)
+        {
+            if (SharpCompress.Archives.Zip.ZipArchive.IsZipFile(comic.EbookPath))
+            {
+                return ".zip";
+            }
+            if (RarArchive.IsRarFile(comic.EbookPath))
+            {
+                return ".rar";
+            }
+            else
+            {
+                return Path.GetExtension(comic.EbookPath);
+            }
+        }
+        
+        public void MoveInErrorsDir(string filePath, Exception e)
+        {
+            // Création du répertoire de destination
+            var errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors";
+            Directory.CreateDirectory(errorPath);
+
+            errorPath += Path.DirectorySeparatorChar + Path.GetFileName(filePath);
+            while (File.Exists(errorPath))
+            {
+                Log.Warning("Le fichier {File} existe déjà", errorPath);
+                string fileName = Path.GetFileNameWithoutExtension(errorPath) + "-Duplicate";
+                fileName += Path.GetExtension(errorPath);
+                Log.Warning("Il va être renommé en {FileName}", fileName);
+                errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors" + Path.DirectorySeparatorChar + fileName;
+            }
+
+            File.Move(filePath, errorPath);
+            Log.Warning( "Le fichier {Origin} a été déplacé dans {Destination}", filePath, errorPath);
         }
     }
 }
