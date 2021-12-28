@@ -64,6 +64,10 @@ namespace MyComicsManagerApi.Models
         public string FicheUrl { get; set; }
 
         public override string ToString()
+        {
+            return "Comic : " + Serie + " - " + Title + " - " + Volume + " - " + EbookPath;
+        }
+
     }
     
     public abstract class ComicReview

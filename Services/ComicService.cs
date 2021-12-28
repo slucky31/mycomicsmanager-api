@@ -56,6 +56,7 @@ namespace MyComicsManagerApi.Services
         {
             // Note du développeur : 
             // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
+            Log.Information("Création du comic {Comic}", comic);
 
             if (comic.EbookName == null || comic.EbookPath == null)
             {
@@ -137,6 +138,8 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
+            Log.Information("Mise à jour du comic {Comic}", comic);
+            
             // Mise à jour du nom du fichier et du chemin si titre et série ont été modifiés
             UpdateDirectoryAndFileName(comic);
 
@@ -199,6 +202,8 @@ namespace MyComicsManagerApi.Services
 
         public void Remove(Comic comic)
         {
+            Log.Information("");
+            
             // Suppression du fichier
             Comic comicToDelete = _comics.Find(c => (c.Id == comic.Id)).FirstOrDefault();
             if (comicToDelete != null)
@@ -223,6 +228,8 @@ namespace MyComicsManagerApi.Services
 
         public void RemoveAllComicsFromLibrary(string libId)
         {
+            Log.Information("Suppression de tous les comics de la bibliothèque {LibId}", libId);
+
             List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
             foreach (Comic c in comics)
             {
