@@ -21,9 +21,9 @@ namespace MyComicsManagerApi.Services
     {
         private readonly LibraryService _libraryService;
         private readonly ComputerVisionService _computerVisionService;
-        
-        private readonly string[] _extensionsFileArchive = { ".jpeg", ".jpg", ".png", ".gif", ".webp", ".xml" };
-        private readonly string[] _extensionsImageArchive = { ".jpeg", ".jpg", ".png", ".gif", ".webp" };
+
+        private readonly string[] _extensionsFileArchive = {".jpeg", ".jpg", ".png", ".gif", ".webp", ".xml"};
+        private readonly string[] _extensionsImageArchive = {".jpeg", ".jpg", ".png", ".gif", ".webp"};
 
         public ComicFileService(LibraryService libraryService, ComputerVisionService computerVisionService)
         {
@@ -98,9 +98,11 @@ namespace MyComicsManagerApi.Services
                 throw new ArgumentOutOfRangeException(nameof(imageIndex),
                     "imageIndex (" + imageIndex + ") doit être compris entre 0 et " + archive.Entries.Count + ".");
             }
-            
+
             var images = archive.Entries
-                .Where(file => _extensionsImageArchive.Any(x => file.FullName.EndsWith(x, StringComparison.OrdinalIgnoreCase))).OrderBy(s => s.FullName);
+                .Where(file =>
+                    _extensionsImageArchive.Any(x => file.FullName.EndsWith(x, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(s => s.FullName);
 
             ZipArchiveEntry entry = images.ElementAt(imageIndex);
             Log.Information("Fichier à extraire {FileName}", entry.FullName);
@@ -132,7 +134,7 @@ namespace MyComicsManagerApi.Services
             switch (extension)
             {
                 case ".cbz":
-                case ".zip" :
+                case ".zip":
                     Log.Information("ExtractImagesFromCbz");
                     try
                     {
@@ -140,9 +142,11 @@ namespace MyComicsManagerApi.Services
                     }
                     catch (Exception)
                     {
-                        Log.Error("Erreur lors de l'extraction des images à partir du fichier CBZ {File}", comic.EbookPath);
+                        Log.Error("Erreur lors de l'extraction des images à partir du fichier CBZ {File}",
+                            comic.EbookPath);
                         throw;
                     }
+
                     break;
 
                 case ".pdf":
@@ -173,7 +177,7 @@ namespace MyComicsManagerApi.Services
 
             comic.EbookPath = Path.ChangeExtension(comic.EbookPath, ".cbz");
             Log.Information("comic.EbookPath = {Path}", comic.EbookPath);
-            
+
             // Déplacement des images au même niveau dans un répertoire archive
             var extractedFiles = Directory.EnumerateFiles(tempDir, "*.*", SearchOption.AllDirectories).ToList();
             var archiveDirectoryPath = Path.Combine(tempDir, "archive");
@@ -182,7 +186,16 @@ namespace MyComicsManagerApi.Services
             {
                 // Passage du nom du fichier en minuscule
                 var destination = Path.Combine(archiveDirectoryPath, Path.GetFileName(file).ToLower());
+                // Déplacement du fichier dans le repertoire archive
                 File.Move(file, destination, true);
+            }
+
+            // Nettoyage des fichiers commençant par .
+            var files = Directory.EnumerateFiles(archiveDirectoryPath, ".*", SearchOption.AllDirectories).ToList();
+            foreach (var file in files)
+            {
+                Log.Debug("Suppression du fichier {File}", file);
+                File.Delete(file);
             }
 
             if (comic.EbookPath != null)
@@ -190,10 +203,11 @@ namespace MyComicsManagerApi.Services
                 // Création de l'archive à partir du répertoire
                 // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
                 // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
-                
+
                 var filesToArchive = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
-                    .Where(file => _extensionsFileArchive.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
-                
+                    .Where(file =>
+                        _extensionsFileArchive.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
+
                 // Construction de l'archive
                 using var archive = ZipFile.Open(comic.EbookPath, ZipArchiveMode.Create);
                 foreach (var file in filesToArchive)
@@ -225,11 +239,11 @@ namespace MyComicsManagerApi.Services
             }
             catch (Exception e)
             {
-                Log.Error("Erreur lors de l'extraction de l'archive {Archive}",comicEbookPath);
+                Log.Error("Erreur lors de l'extraction de l'archive {Archive}", comicEbookPath);
                 MoveInErrorsDir(comicEbookPath, e);
-                throw new ComicIoException("Erreur lors de l'extraction de l'archive. Consulter le répertoire errors.", e);
+                throw new ComicIoException("Erreur lors de l'extraction de l'archive. Consulter le répertoire errors.",
+                    e);
             }
-            
         }
 
         private void ExtractImagesFromPdf(string comicEbookPath, string tempDir)
@@ -393,6 +407,7 @@ namespace MyComicsManagerApi.Services
             {
                 return comic;
             }
+
             comic.Title = comicInfo.Title;
             comic.Serie = comicInfo.Series;
             comic.Writer = comicInfo.Writer;
@@ -437,6 +452,7 @@ namespace MyComicsManagerApi.Services
             {
                 return ".zip";
             }
+
             if (RarArchive.IsRarFile(comic.EbookPath))
             {
                 return ".rar";
@@ -446,7 +462,7 @@ namespace MyComicsManagerApi.Services
                 return Path.GetExtension(comic.EbookPath);
             }
         }
-        
+
         public void MoveInErrorsDir(string filePath, Exception e)
         {
             // Création du répertoire de destination
@@ -460,11 +476,12 @@ namespace MyComicsManagerApi.Services
                 string fileName = Path.GetFileNameWithoutExtension(errorPath) + "-Duplicate";
                 fileName += Path.GetExtension(errorPath);
                 Log.Warning("Il va être renommé en {FileName}", fileName);
-                errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors" + Path.DirectorySeparatorChar + fileName;
+                errorPath = _libraryService.GetLibrairiesDirRootPath() + "errors" + Path.DirectorySeparatorChar +
+                            fileName;
             }
 
             File.Move(filePath, errorPath);
-            Log.Warning( "Le fichier {Origin} a été déplacé dans {Destination}", filePath, errorPath);
+            Log.Warning("Le fichier {Origin} a été déplacé dans {Destination}", filePath, errorPath);
         }
     }
 }
