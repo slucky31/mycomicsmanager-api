@@ -257,7 +257,7 @@ namespace MyComicsManagerApi.Services
             var frCulture = new CultureInfo("fr-FR");
 
             const DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
-            if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
+            if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "d MMMM yyyy", frCulture,
                     dateTimeStyles, out var dateValue))
             {
                 comic.Published = dateValue;

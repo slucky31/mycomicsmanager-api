@@ -10,9 +10,9 @@ namespace MyComicsManagerApi.DataParser
 {
     public class BdphileComicHtmlDataParser : ComicHtmlDataParser
     {
-        private const string BDPHILE_URL = "https://www.bdphile.info/search/album/?q=";
+        private const string BdphileUrl = "https://www.bdphile.info/search/album/?q=";
 
-        private string FicheURL { get; set; }
+        private string FicheUrl { get; set; }
 
         private bool IsOneShot { get; set; }
 
@@ -87,7 +87,7 @@ namespace MyComicsManagerApi.DataParser
         {
             if (IsOneShot)
             {
-                return FicheURL;
+                return FicheUrl;
             }
             else
             {
@@ -142,10 +142,10 @@ namespace MyComicsManagerApi.DataParser
 
         protected override string ExtractURL()
         {
-            return FicheURL;
+            return FicheUrl;
         }
 
-        protected void extractDataTable()
+        protected void ExtractDataTable()
         {
             ExtractedInfo.Clear();
 
@@ -190,12 +190,12 @@ namespace MyComicsManagerApi.DataParser
         {
             // Recherche sur BDPhile
             // https://www.bdphile.info/search/album/?q=9782365772013
-            LoadDocument(BDPHILE_URL + isbn);
+            LoadDocument(BdphileUrl + isbn);
 
             // Vérification que l'ISBN fourni donne bien au moins un résultat
             var checkAlbum = ExtractTextValue("/html/body/div[1]/section[2]/div/div[1]/ul/li[2]/a/text()");
             var checkNbAlbums = ExtractTextValue("/html/body/div[1]/section[2]/div/div[1]/ul/li[2]/a/span");
-            var nbAlbums = 0;
+            int nbAlbums;
 
             try
             {
@@ -210,17 +210,17 @@ namespace MyComicsManagerApi.DataParser
             if ((checkAlbum == "Albums") && (nbAlbums > 0))
             {
                 // Récupération de l'URL de la fiche du comic
-                FicheURL = ExtractAttributValue("/html/body/div[1]/section[2]/div/div[2]/a[1]", "href");
-                Log.Information("FicheURL = {FicheUrl}", FicheURL);
+                FicheUrl = ExtractAttributValue("/html/body/div[1]/section[2]/div/div[2]/a[1]", "href");
+                Log.Information("FicheURL = {FicheUrl}", FicheUrl);
 
                 // Récupération de la page liée à l'ISBN recherché
-                LoadDocument(FicheURL);
+                LoadDocument(FicheUrl);
 
                 IsOneShot = "(one-shot)".Equals(
                     ExtractTextValue("/html/body/div[1]/section[1]/div/section/h1/span[1]"));
 
                 // Récupération du tableau contenant les informations (les éléments sans valeurs ne sont pas affichés)
-                extractDataTable();
+                ExtractDataTable();
             }
             else
             {
