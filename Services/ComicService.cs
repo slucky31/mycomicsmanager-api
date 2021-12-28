@@ -137,14 +137,17 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
+            // Mise à jour du nom du fichier et du chemin si titre et série ont été modifiés
             UpdateDirectoryAndFileName(comic);
 
-            // Mise à jour en base de données
+            // Mise à jour de la date de dernière modification
             comic.Edited = DateTime.Now;
-            _comics.ReplaceOne(c => c.Id == id, comic);
-
+            
             // Mise à jour du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
+            
+            // Mise à jour en base de données
+            _comics.ReplaceOne(c => c.Id == id, comic);
         }
 
         private void UpdateDirectoryAndFileName(Comic comic)
@@ -156,7 +159,15 @@ namespace MyComicsManagerApi.Services
                 var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
 
                 // Mise à jour du nom du fichier pour le calcul de la destination
-                comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
+                if (comic.Serie == "One shot")
+                {
+                    comic.EbookName = comic.Title + ".cbz";
+                }
+                else
+                {
+                    comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
+                }
+                
                 var libraryPath =
                     _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
                 var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar +

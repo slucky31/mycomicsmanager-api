@@ -12,7 +12,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using MyComicsManagerApi.Exceptions;
-using MyComicsManagerApi.Utils;
 using SharpCompress.Archives.Rar;
 using UglyToad.PdfPig;
 
