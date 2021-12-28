@@ -63,9 +63,10 @@ namespace MyComicsManagerApi.Models
 
         public string FicheUrl { get; set; }
 
+        public override string ToString()
     }
     
-    public class ComicReview
+    public abstract class ComicReview
     {
         public DateTime? Reviewed { get; set; }
         public int Note { get; set; }
