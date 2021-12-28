@@ -21,6 +21,9 @@ namespace MyComicsManagerApi.Services
     {
         private readonly LibraryService _libraryService;
         private readonly ComputerVisionService _computerVisionService;
+        
+        private readonly string[] _extensionsFileArchive = { ".jpeg", ".jpg", ".png", ".gif", ".webp", ".xml" };
+        private readonly string[] _extensionsImageArchive = { ".jpeg", ".jpg", ".png", ".gif", ".webp" };
 
         public ComicFileService(LibraryService libraryService, ComputerVisionService computerVisionService)
         {
@@ -96,9 +99,8 @@ namespace MyComicsManagerApi.Services
                     "imageIndex (" + imageIndex + ") doit être compris entre 0 et " + archive.Entries.Count + ".");
             }
             
-            var extensions = new[] { ".jpg", ".png", ".gif", ".webp" };
             var images = archive.Entries
-                .Where(file => extensions.Any(x => file.FullName.EndsWith(x, StringComparison.OrdinalIgnoreCase))).OrderBy(s => s.FullName);
+                .Where(file => _extensionsImageArchive.Any(x => file.FullName.EndsWith(x, StringComparison.OrdinalIgnoreCase))).OrderBy(s => s.FullName);
 
             ZipArchiveEntry entry = images.ElementAt(imageIndex);
             Log.Information("Fichier à extraire {FileName}", entry.FullName);
@@ -189,9 +191,8 @@ namespace MyComicsManagerApi.Services
                 // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
                 // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
                 
-                var extensions = new[] { ".jpg", ".png", ".gif", ".webp", ".xml" };
                 var filesToArchive = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
-                    .Where(file => extensions.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
+                    .Where(file => _extensionsFileArchive.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
                 
                 // Construction de l'archive
                 using var archive = ZipFile.Open(comic.EbookPath, ZipArchiveMode.Create);
@@ -243,7 +244,7 @@ namespace MyComicsManagerApi.Services
                         IReadOnlyList<byte> b = image.RawBytes;
                         string imageName = Path.Combine(tempDir, "P" + page.Number.ToString("D5") + ".jpg");
                         File.WriteAllBytes(imageName, b.ToArray());
-                        Log.Information("Image with {Size} bytes on page {Page}. Location: {Image}", b.Count,
+                        Log.Debug("Image with {Size} bytes on page {Page}. Location: {Image}", b.Count,
                             page.Number, imageName);
                     }
                 }
@@ -262,7 +263,7 @@ namespace MyComicsManagerApi.Services
                     continue;
                 }
 
-                Log.Information("Key : {Key}", reader.Entry.Key);
+                Log.Debug("Key : {Key}", reader.Entry.Key);
 
                 reader.WriteEntryToDirectory(tempDir, new ExtractionOptions
                 {
@@ -276,9 +277,8 @@ namespace MyComicsManagerApi.Services
         {
             var zipPath = GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
             using var archive = ZipFile.OpenRead(zipPath);
-            var images = archive.Entries.Where(s =>
-                s.FullName.EndsWith(".jpg") || s.FullName.EndsWith(".png") || s.FullName.EndsWith(".gif") ||
-                s.FullName.EndsWith(".webp"));
+            var images = archive.Entries.Where(file =>
+                _extensionsImageArchive.Any(x => file.FullName.EndsWith(x, StringComparison.OrdinalIgnoreCase)));
             comic.PageCount = images.Count();
         }
 
