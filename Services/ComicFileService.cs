@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using MyComicsManagerApi.Exceptions;
+using MyComicsManagerApi.Utils;
 using SharpCompress.Archives.Rar;
 using UglyToad.PdfPig;
 
@@ -184,8 +185,9 @@ namespace MyComicsManagerApi.Services
             Directory.CreateDirectory(archiveDirectoryPath);
             foreach (var file in extractedFiles)
             {
-                // Passage du nom du fichier en minuscule
-                var destination = Path.Combine(archiveDirectoryPath, Path.GetFileName(file).ToLower());
+                // Passage du nom du fichier en PascalCase et de l'extension en minuscule
+                var destFile = Path.GetFileNameWithoutExtension(file) + Path.GetExtension(file).ToLower();
+                var destination = Path.Combine(archiveDirectoryPath, destFile);
                 // Déplacement du fichier dans le repertoire archive
                 File.Move(file, destination, true);
             }
