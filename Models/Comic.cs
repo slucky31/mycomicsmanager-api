@@ -70,7 +70,7 @@ namespace MyComicsManagerApi.Models
 
     }
     
-    public abstract class ComicReview
+    public class ComicReview
     {
         public DateTime? Reviewed { get; set; }
         public int Note { get; set; }
