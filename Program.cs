@@ -15,6 +15,8 @@ namespace MyComicsManagerApi
             .AddEnvironmentVariables()
             .Build();
         
+        private const string logFormat = "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+        
         public static void Main(string[] args)
         {
             
@@ -23,7 +25,11 @@ namespace MyComicsManagerApi
                 .ReadFrom.Configuration(Configuration)
                 .Enrich.FromLogContext()
                 .WriteTo.Console(
-                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {NewLine}{Exception}")
+                    outputTemplate: logFormat)
+                .WriteTo.File("logs/mcm-api-.log", 
+                    rollingInterval: RollingInterval.Day,
+                    outputTemplate: logFormat,
+                    buffered:true)
                 .CreateLogger();
         
             try

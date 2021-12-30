@@ -17,7 +17,7 @@ namespace MyComicsManagerApi.Services
         private readonly IMongoCollection<Comic> _comics;
         private readonly LibraryService _libraryService;
         private readonly ComicFileService _comicFileService;
-        const int MAX_COMICS_PER_REQUEST = 100;
+        private const int MaxComicsPerRequest = 100;
 
         public ComicService(IDatabaseSettings settings, LibraryService libraryService,
             ComicFileService comicFileService)
@@ -35,17 +35,17 @@ namespace MyComicsManagerApi.Services
 
         public List<Comic> GetOrderByLastAddedLimitBy(int limit) =>
             _comics.Find(comic => true).SortByDescending(comic => comic.Added)
-                .Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+                .Limit(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
 
         public List<Comic> GetWithoutIsbnLimitBy(int limit) =>
             _comics.Find(comic => string.IsNullOrEmpty(comic.Isbn)).SortBy(comic => comic.Added)
-                .Limit(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+                .Limit(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
 
         public List<Comic> GetRandomLimitBy(int limit)
         {
             var list = _comics.Find(comic => true).ToList();
-            return list.OrderBy(arg => Guid.NewGuid())
-                .Take(limit < MAX_COMICS_PER_REQUEST ? limit : MAX_COMICS_PER_REQUEST).ToList();
+            return list.OrderBy(_ => Guid.NewGuid())
+                .Take(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
         }
 
 
@@ -56,6 +56,7 @@ namespace MyComicsManagerApi.Services
         {
             // Note du développeur : 
             // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
+            Log.Information("Création du comic {Comic}", comic);
 
             if (comic.EbookName == null || comic.EbookPath == null)
             {
@@ -137,14 +138,19 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
+            Log.Information("Mise à jour du comic {Comic}", comic);
+            
+            // Mise à jour du nom du fichier et du chemin si titre et série ont été modifiés
             UpdateDirectoryAndFileName(comic);
 
-            // Mise à jour en base de données
+            // Mise à jour de la date de dernière modification
             comic.Edited = DateTime.Now;
-            _comics.ReplaceOne(c => c.Id == id, comic);
-
+            
             // Mise à jour du fichier ComicInfo.xml
             _comicFileService.AddComicInfoInComicFile(comic);
+            
+            // Mise à jour en base de données
+            _comics.ReplaceOne(c => c.Id == id, comic);
         }
 
         private void UpdateDirectoryAndFileName(Comic comic)
@@ -156,7 +162,15 @@ namespace MyComicsManagerApi.Services
                 var origin = _comicFileService.GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
 
                 // Mise à jour du nom du fichier pour le calcul de la destination
-                comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
+                if (comic.Serie == "One shot")
+                {
+                    comic.EbookName = comic.Title + ".cbz";
+                }
+                else
+                {
+                    comic.EbookName = comic.Serie.ToPascalCase() + "_T" + comic.Volume.ToString("000") + ".cbz";
+                }
+                
                 var libraryPath =
                     _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH);
                 var comicEbookPath = Path.GetDirectoryName(comic.EbookPath) + Path.DirectorySeparatorChar +
@@ -188,6 +202,8 @@ namespace MyComicsManagerApi.Services
 
         public void Remove(Comic comic)
         {
+            Log.Information("");
+            
             // Suppression du fichier
             Comic comicToDelete = _comics.Find(c => (c.Id == comic.Id)).FirstOrDefault();
             if (comicToDelete != null)
@@ -212,6 +228,8 @@ namespace MyComicsManagerApi.Services
 
         public void RemoveAllComicsFromLibrary(string libId)
         {
+            Log.Information("Suppression de tous les comics de la bibliothèque {LibId}", libId);
+
             List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
             foreach (Comic c in comics)
             {
@@ -246,7 +264,7 @@ namespace MyComicsManagerApi.Services
             var frCulture = new CultureInfo("fr-FR");
 
             const DateTimeStyles dateTimeStyles = DateTimeStyles.AssumeUniversal;
-            if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "dd MMMM yyyy", frCulture,
+            if (DateTime.TryParseExact(results[ComicDataEnum.DATE_PARUTION], "d MMMM yyyy", frCulture,
                     dateTimeStyles, out var dateValue))
             {
                 comic.Published = dateValue;
