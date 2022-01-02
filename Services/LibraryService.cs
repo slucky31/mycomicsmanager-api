@@ -1,17 +1,19 @@
 using MyComicsManagerApi.Models;
 using MongoDB.Driver;
 using System.Collections.Generic;
-using System.Linq;
-using Serilog;
 using System.IO;
+using MyComicsManagerApi.Utils;
+using Serilog;
 
 namespace MyComicsManagerApi.Services
 {
     public class LibraryService
     {
+        private static ILogger Log => Serilog.Log.ForContext<LibraryService>();
+        
         private readonly IMongoCollection<Library> _libraries;
         private readonly ILibrairiesSettings _libSettings;
-        private readonly char[] charsToTrim = {'/', '\\'};
+        private readonly char[] _charsToTrim = {'/', '\\'};
 
         public enum PathType
         {
@@ -21,7 +23,7 @@ namespace MyComicsManagerApi.Services
 
         public LibraryService(IDatabaseSettings dbSettings, ILibrairiesSettings libSettings)
         {
-            Log.Debug("settings = {@settings}", dbSettings);
+            Log.Here().Debug("settings = {@Settings}", dbSettings);
             var client = new MongoClient(dbSettings.ConnectionString);
             var database = client.GetDatabase(dbSettings.DatabaseName);
             _libraries = database.GetCollection<Library>(dbSettings.LibrariesCollectionName);
@@ -32,7 +34,7 @@ namespace MyComicsManagerApi.Services
             _libraries.Find(library => true).ToList();
 
         public Library Get(string id) =>
-            _libraries.Find<Library>(library => library.Id == id).FirstOrDefault();
+            _libraries.Find(library => library.Id == id).FirstOrDefault();
 
         public Library Create(Library libraryIn)
         {
@@ -55,7 +57,7 @@ namespace MyComicsManagerApi.Services
         public void Remove(Library libraryIn)
         {
             
-            // Suppression des fichiers et du répértoire dans libs
+            // Suppression des fichiers et du répertoire dans libs
             string libPath = GetLibraryPath(libraryIn.Id, PathType.ABSOLUTE_PATH);
             if (Directory.Exists(libPath))
             {
@@ -78,26 +80,26 @@ namespace MyComicsManagerApi.Services
                 {
                     path = GetLibrairiesDirRootPath();
                 }
-                return path + lib.RelPath.TrimEnd(charsToTrim) + Path.DirectorySeparatorChar; 
+                return path + lib.RelPath.TrimEnd(_charsToTrim) + Path.DirectorySeparatorChar; 
             }
         }
 
         public string GetLibrairiesDirRootPath() {
 
-            Directory.CreateDirectory(_libSettings.LibrairiesDirRootPath.TrimEnd(charsToTrim));
-            return _libSettings.LibrairiesDirRootPath.TrimEnd(charsToTrim) + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(_libSettings.LibrairiesDirRootPath.TrimEnd(_charsToTrim));
+            return _libSettings.LibrairiesDirRootPath.TrimEnd(_charsToTrim) + Path.DirectorySeparatorChar;
         }
 
         public string GetFileUploadDirRootPath() {
 
-            Directory.CreateDirectory(_libSettings.FileUploadDirRootPath.TrimEnd(charsToTrim));
-            return _libSettings.FileUploadDirRootPath.TrimEnd(charsToTrim) + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(_libSettings.FileUploadDirRootPath.TrimEnd(_charsToTrim));
+            return _libSettings.FileUploadDirRootPath.TrimEnd(_charsToTrim) + Path.DirectorySeparatorChar;
         }
 
         public string GetCoversDirRootPath()
         {
-            Directory.CreateDirectory(_libSettings.CoversDirRootPath.TrimEnd(charsToTrim));
-            return _libSettings.CoversDirRootPath.TrimEnd(charsToTrim) + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(_libSettings.CoversDirRootPath.TrimEnd(_charsToTrim));
+            return _libSettings.CoversDirRootPath.TrimEnd(_charsToTrim) + Path.DirectorySeparatorChar;
         }
 
     }

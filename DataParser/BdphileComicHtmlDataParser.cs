@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using MyComicsManagerApi.Exceptions;
+using MyComicsManagerApi.Utils;
 using Serilog;
 
 namespace MyComicsManagerApi.DataParser
 {
     public class BdphileComicHtmlDataParser : ComicHtmlDataParser
     {
+        private static ILogger Log => Serilog.Log.ForContext<BdphileComicHtmlDataParser>();
+        
         private const string BdphileUrl = "https://www.bdphile.info/search/album/?q=";
 
         private string FicheUrl { get; set; }
@@ -203,7 +206,7 @@ namespace MyComicsManagerApi.DataParser
             }
             catch (Exception e)
             {
-                Log.Error("Erreur lors de l'interpération du nombre d'Albums {Nb} : {Exception}",checkNbAlbums, e);
+                Log.Here().Error("Erreur lors de l'interpération du nombre d'Albums {Nb} : {Exception}",checkNbAlbums, e);
                 throw new FormatException("Erreur lors de l'interpération du nombre d'Albums",e);
             }
 
@@ -211,7 +214,7 @@ namespace MyComicsManagerApi.DataParser
             {
                 // Récupération de l'URL de la fiche du comic
                 FicheUrl = ExtractAttributValue("/html/body/div[1]/section[2]/div/div[2]/a[1]", "href");
-                Log.Information("FicheURL = {FicheUrl}", FicheUrl);
+                Log.Here().Information("FicheURL = {FicheUrl}", FicheUrl);
 
                 // Récupération de la page liée à l'ISBN recherché
                 LoadDocument(FicheUrl);

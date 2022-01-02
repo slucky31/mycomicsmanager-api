@@ -27,6 +27,8 @@ namespace MyComicsManagerApi.DataParser
 
     public abstract class ComicHtmlDataParser : HtmlDataParser
     {
+        private static ILogger Log => Serilog.Log.ForContext<ComicHtmlDataParser>();
+        
         private Dictionary<ComicDataEnum, string> ExtractedData { get; set; }
 
         protected ComicHtmlDataParser()
