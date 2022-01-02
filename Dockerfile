@@ -3,6 +3,7 @@ WORKDIR /app
 
 # Copy csproj and restore as distinct layers
 COPY *.csproj ./
+COPY ["NuGet.config", "./"]
 RUN dotnet restore "./MyComicsManagerApi.csproj" -r linux-arm
 
 # Copy everything else and build
