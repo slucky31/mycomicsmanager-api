@@ -140,7 +140,7 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
-            Log.Here().Information("Mise à jour du comic {Comic}", comic);
+            Log.Here().Information("Mise à jour du comic {Comic}", id.Replace(Environment.NewLine, ""));
             
             // Mise à jour du nom du fichier et du chemin si titre et série ont été modifiés
             UpdateDirectoryAndFileName(comic);
