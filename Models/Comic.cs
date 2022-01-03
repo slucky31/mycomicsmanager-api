@@ -65,7 +65,7 @@ namespace MyComicsManagerApi.Models
 
         public override string ToString()
         {
-            return "Comic : " + Serie + " - " + Title + " - " + Volume + " - " + EbookPath;
+            return "Comic : " + Serie.Replace(Environment.NewLine, "") + " - " + Title.Replace(Environment.NewLine, "") + " - " + Volume + " - " + EbookPath.Replace(Environment.NewLine, "");
         }
 
     }

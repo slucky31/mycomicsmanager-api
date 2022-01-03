@@ -14,6 +14,8 @@ namespace MyComicsManagerApi.Services
 {
     public class ComicService
     {
+        private static ILogger Log => Serilog.Log.ForContext<ComicService>();
+        
         private readonly IMongoCollection<Comic> _comics;
         private readonly LibraryService _libraryService;
         private readonly ComicFileService _comicFileService;
@@ -22,7 +24,7 @@ namespace MyComicsManagerApi.Services
         public ComicService(IDatabaseSettings settings, LibraryService libraryService,
             ComicFileService comicFileService)
         {
-            Log.Debug("settings = {Settings}", settings);
+            Log.Here().Debug("settings = {Settings}", settings);
             var client = new MongoClient(settings.ConnectionString);
             var database = client.GetDatabase(settings.DatabaseName);
             _comics = database.GetCollection<Comic>(settings.ComicsCollectionName);
@@ -56,13 +58,13 @@ namespace MyComicsManagerApi.Services
         {
             // Note du développeur : 
             // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
-            Log.Information("Création du comic {Comic}", comic);
+            Log.Here().Information("-- Create : Traitement du fichier {File}", comic.EbookPath);
 
             if (comic.EbookName == null || comic.EbookPath == null)
             {
-                Log.Error("Une des valeurs suivantes est null et ne devrait pas l'être");
-                Log.Error("EbookName : {Value}", comic.EbookName);
-                Log.Error("EbookPath : {Value}", comic.EbookPath);
+                Log.Here().Error("Une des valeurs suivantes est null et ne devrait pas l'être");
+                Log.Here().Error("EbookName : {Value}", comic.EbookName);
+                Log.Here().Error("EbookPath : {Value}", comic.EbookPath);
                 return null;
             }
 
@@ -73,7 +75,7 @@ namespace MyComicsManagerApi.Services
             }
             catch (Exception e)
             {
-                Log.Error(e, "Erreur lors de la conversion en CBZ");
+                Log.Here().Error(e, "-- Create : Erreur lors de la conversion en CBZ");
                 return null;
             }
 
@@ -138,7 +140,7 @@ namespace MyComicsManagerApi.Services
 
         public void Update(string id, Comic comic)
         {
-            Log.Information("Mise à jour du comic {Comic}", comic);
+            Log.Here().Information("Mise à jour du comic {Comic}", id.Replace(Environment.NewLine, ""));
             
             // Mise à jour du nom du fichier et du chemin si titre et série ont été modifiés
             UpdateDirectoryAndFileName(comic);
@@ -202,7 +204,7 @@ namespace MyComicsManagerApi.Services
 
         public void Remove(Comic comic)
         {
-            Log.Information("");
+            Log.Here().Information("");
             
             // Suppression du fichier
             Comic comicToDelete = _comics.Find(c => (c.Id == comic.Id)).FirstOrDefault();
@@ -228,7 +230,7 @@ namespace MyComicsManagerApi.Services
 
         public void RemoveAllComicsFromLibrary(string libId)
         {
-            Log.Information("Suppression de tous les comics de la bibliothèque {LibId}", libId);
+            Log.Here().Information("Suppression de tous les comics de la bibliothèque {LibId}", libId.Replace(Environment.NewLine, ""));
 
             List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
             foreach (Comic c in comics)
@@ -323,7 +325,7 @@ namespace MyComicsManagerApi.Services
             }
             catch (Exception e)
             {
-                Log.Error("Erreur lors du déplacement du fichier {Origin} vers {Destination}", origin, destination);
+                Log.Here().Error("Erreur lors du déplacement du fichier {Origin} vers {Destination}", origin, destination);
                 _comicFileService.MoveInErrorsDir(origin, e);
                 throw new ComicIoException("Erreur lors du déplacement du fichier. Consulter le répertoire errors.", e);
             }

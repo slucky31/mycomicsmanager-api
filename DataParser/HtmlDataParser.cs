@@ -1,11 +1,14 @@
 ﻿using HtmlAgilityPack;
 using System;
+using MyComicsManagerApi.Utils;
 using Serilog;
 
 namespace MyComicsManagerApi.DataParser
 {
     public class HtmlDataParser
     {
+        private static ILogger Log => Serilog.Log.ForContext<HtmlDataParser>();
+        
         private HtmlWeb Web { get; set; }
 
         protected HtmlDocument Doc { get; set; }
@@ -17,7 +20,7 @@ namespace MyComicsManagerApi.DataParser
 
         public void LoadDocument(string url)
         {
-            Log.Information("Load information from {Url}", url);
+            Log.Here().Information("Load information from {Url}", url);
             Doc = Web.Load(url);
         }
 

@@ -2,16 +2,17 @@
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-using Serilog;
 using System.Text;
 using MyComicsManagerApi.Models;
+using MyComicsManagerApi.Utils;
+using Serilog;
 
 namespace MyComicsManagerApi.ComputerVision
 {
     public class ComputerVisionService
     {
+        private static ILogger Log => Serilog.Log.ForContext<ComputerVisionService>();
         private readonly IAzureSettings _azureSettings;
 
         public ComputerVisionService(IAzureSettings azureSettings)
@@ -29,7 +30,7 @@ namespace MyComicsManagerApi.ComputerVision
         
         public async Task<string> ReadFileLocal(ComputerVisionClient client, string localFile)
         {
-            Log.Debug("READ FILE FROM LOCAL");
+            Log.Here().Debug("READ FILE FROM LOCAL");
 
             // Read text from URL
             var textHeaders = await client.ReadInStreamAsync(File.OpenRead(localFile));
@@ -43,7 +44,7 @@ namespace MyComicsManagerApi.ComputerVision
 
             // Extract the text
             ReadOperationResult results;
-            Log.Debug($"Reading text from local file {Path.GetFileName(localFile)}...");
+            Log.Here().Debug($"Reading text from local file {Path.GetFileName(localFile)}...");
 
             do
             {
