@@ -58,7 +58,7 @@ namespace MyComicsManagerApi.Services
         {
             // Note du développeur : 
             // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
-            Log.Here().Information("-- Create : Création du comic {Comic}", comic);
+            Log.Here().Information("-- Create : Traitement du fichier {File}", comic.EbookPath);
 
             if (comic.EbookName == null || comic.EbookPath == null)
             {
