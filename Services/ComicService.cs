@@ -230,7 +230,7 @@ namespace MyComicsManagerApi.Services
 
         public void RemoveAllComicsFromLibrary(string libId)
         {
-            Log.Here().Information("Suppression de tous les comics de la bibliothèque {LibId}", libId);
+            Log.Here().Information("Suppression de tous les comics de la bibliothèque {LibId}", libId.Replace(Environment.NewLine, ""));
 
             List<Comic> comics = _comics.Find(c => (c.LibraryId == libId)).ToList();
             foreach (Comic c in comics)
