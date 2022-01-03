@@ -219,7 +219,7 @@ namespace MyComicsManagerApi.Services
                 .Where(file =>
                     _extensionsImageArchiveWithoutWebp.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
             Log.Here().Information("Conversion des {NbFiles} images en WebP et resize à {Width} pixels de large", filesToConvert.Count, ResizedWidth);
-            foreach (var file in filesToConvert)
+            Parallel.ForEach(filesToConvert, file =>
             {
                 Log.Here().Debug("Conversion du fichier {File}", file);
                 var webpConvertedFile = Path.ChangeExtension(file, ".webp");
@@ -231,21 +231,23 @@ namespace MyComicsManagerApi.Services
                         if (image.Width > image.Height)
                         {
                             // Cas d'une double page
-                            image.Mutate(x => x.Resize(2 * ResizedWidth,0));
+                            image.Mutate(x => x.Resize(2 * ResizedWidth, 0));
                         }
                         else
                         {
                             // Cas d'une page simple
-                            image.Mutate(x => x.Resize(ResizedWidth,0));
+                            image.Mutate(x => x.Resize(ResizedWidth, 0));
                         }
                     }
+
                     // Conversion en WebP
-                    image.SaveAsWebp(webpConvertedFile, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy });
+                    image.SaveAsWebp(webpConvertedFile, new WebpEncoder {FileFormat = WebpFileFormatType.Lossy});
                     Log.Here().Debug("Image {Image} was converted into WebP {WebpImage}", file, webpConvertedFile);
                 }
+
                 // Suppression du fichier original
                 File.Delete(file);
-            }
+            });
 
             if (comic.EbookPath != null)
             {
