@@ -217,7 +217,7 @@ namespace MyComicsManagerApi.Services
             // Conversion des fichiers en WebP
             var filesToConvert = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
                 .Where(file =>
-                    _extensionsImageArchiveWithoutWebp.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();;
+                    _extensionsImageArchiveWithoutWebp.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
             Log.Here().Information("Conversion des {NbFiles} images en WebP et resize à {Width} pixels de large", filesToConvert.Count, ResizedWidth);
             foreach (var file in filesToConvert)
             {
@@ -240,7 +240,7 @@ namespace MyComicsManagerApi.Services
                         }
                     }
                     // Conversion en WebP
-                    image.SaveAsWebp(webpConvertedFile, new WebpEncoder() { FileFormat = WebpFileFormatType.Lossy });
+                    image.SaveAsWebp(webpConvertedFile, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy });
                     Log.Here().Debug("Image {Image} was converted into WebP {WebpImage}", file, webpConvertedFile);
                 }
                 // Suppression du fichier original
