@@ -58,7 +58,7 @@ namespace MyComicsManagerApi.Services
         {
             // Note du développeur : 
             // EbookPath est en absolu au début du traitement pour localiser le fichier dans le répertoire d'upload
-            Log.Here().Information("-- Create : Traitement du fichier {File}", comic.EbookPath);
+            Log.Here().Information("Traitement du fichier {File}", comic.EbookPath);
 
             if (comic.EbookName == null || comic.EbookPath == null)
             {
@@ -75,7 +75,7 @@ namespace MyComicsManagerApi.Services
             }
             catch (Exception e)
             {
-                Log.Here().Error(e, "-- Create : Erreur lors de la conversion en CBZ");
+                Log.Here().Error(e, "Erreur lors de la conversion en CBZ");
                 return null;
             }
 
