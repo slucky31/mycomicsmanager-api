@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +38,8 @@ namespace MyComicsManagerApi
             services.AddSingleton<LibraryService>();
             services.AddSingleton<ComicFileService>();
             services.AddSingleton<ComputerVisionService>();
+            services.AddSingleton<HttpClient>();
+            services.AddSingleton<GoogleBooksApiDataService>();
 
             services.AddControllers().AddNewtonsoftJson(options => options.UseMemberCasing());
 
