@@ -37,6 +37,7 @@ namespace MyComicsManagerApi
             services.AddSingleton<ComicService>();
             services.AddSingleton<LibraryService>();
             services.AddSingleton<ComicFileService>();
+            services.AddSingleton<BookService>();
             services.AddSingleton<ComputerVisionService>();
             services.AddSingleton<HttpClient>();
             services.AddSingleton<GoogleBooksApiDataService>();
