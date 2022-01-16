@@ -25,7 +25,9 @@ namespace MyComicsManagerApi.Models
 
         public int Volume { get; set; }
         
-        public List<ComicReview> ComicReviews { get; set; }
+        public DateTime Added { get; set; }
+        
+        public int Review { get; set; }
 
     }
 }
