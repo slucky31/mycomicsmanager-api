@@ -219,7 +219,15 @@ namespace MyComicsManagerApi.Services
                 .Where(file =>
                     _extensionsImageArchiveWithoutWebp.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
             Log.Here().Information("Conversion des {NbFiles} images en WebP et resize à {Width} pixels de large", filesToConvert.Count, ResizedWidth);
-            Parallel.ForEach(filesToConvert, file =>
+            
+            var opts = new ParallelOptions
+            {
+                // 75% (rounded up) of the processor count
+                // https://stackoverflow.com/questions/9290498/how-can-i-limit-parallel-foreach
+                MaxDegreeOfParallelism = Convert.ToInt32(Math.Ceiling((Environment.ProcessorCount * 0.75) * 1.0))
+            };
+            Log.Here().Information("MaxDegreeOfParallelism : {MaxDegreeOfParallelism}", opts.MaxDegreeOfParallelism);
+            Parallel.ForEach(filesToConvert, opts, file =>
             {
                 Log.Here().Debug("Conversion du fichier {File}", file);
                 var webpConvertedFile = Path.ChangeExtension(file, ".webp");
@@ -484,7 +492,7 @@ namespace MyComicsManagerApi.Services
             // Création d'un répertoire temporaire pour stocker les images
             var tempDir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
             Directory.CreateDirectory(tempDir);
-            Log.Here().Information("-- CreateTempDirectory : Création du répertoire temporaire : {Dir}", tempDir);
+            Log.Here().Information("Création du répertoire temporaire : {Dir}", tempDir);
 
             if (!tempDir.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
             {
