@@ -11,7 +11,6 @@ namespace MyComicsManagerApi.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
-        private static ILogger Log => Serilog.Log.ForContext<BooksController>();
         private readonly BookService _bookService;
         
         public BooksController(BookService bookService)
@@ -39,7 +38,6 @@ namespace MyComicsManagerApi.Controllers
         [HttpGet("getinfo/{isbn}")]
         public ActionResult<Book> SearchComicInfo(string isbn)
         {
-            Log.Here().Information("Searching for book with isbn: {Isbn}", isbn);
             var book = _bookService.SearchComicInfoAndUpdate(isbn);
             if (book == null)
             {

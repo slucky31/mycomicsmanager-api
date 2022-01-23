@@ -20,7 +20,7 @@ namespace MyComicsManagerApi.DataParser
 
         public void LoadDocument(string url)
         {
-            Log.Here().Information("Load information from {Url}", url);
+            Log.Here().Information("Load information from {Url}", url.Replace(Environment.NewLine, ""));
             Doc = Web.Load(url);
         }
 
