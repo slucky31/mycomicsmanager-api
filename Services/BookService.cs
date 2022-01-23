@@ -45,15 +45,17 @@ namespace MyComicsManagerApi.Services
             _books.DeleteOne(book => book.Id == bookIn.Id);
         }
         
-        public Book SearchComicInfoAndUpdate(Book book)
+        public Book SearchComicInfoAndUpdate(string isbn)
         {
-            if (string.IsNullOrEmpty(book.Isbn))
+            if (string.IsNullOrEmpty(isbn))
             {
                 return null;
             }
 
+            var book = new Book();
+
             var parser = new BdphileComicHtmlDataParser();
-            var results = parser.Parse(book.Isbn);
+            var results = parser.Parse(isbn);
 
             if (results.Count == 0)
             {

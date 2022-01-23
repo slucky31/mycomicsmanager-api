@@ -2,6 +2,8 @@ using MyComicsManagerApi.Models;
 using MyComicsManagerApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using MyComicsManagerApi.Utils;
+using Serilog;
 
 namespace MyComicsManagerApi.Controllers
 {
@@ -9,6 +11,7 @@ namespace MyComicsManagerApi.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
+        private static ILogger Log => Serilog.Log.ForContext<BooksController>();
         private readonly BookService _bookService;
         
         public BooksController(BookService bookService)
@@ -33,22 +36,17 @@ namespace MyComicsManagerApi.Controllers
             return book;
         }
         
-        [HttpGet("getinfo/{id:length(24)}")]
-        public ActionResult<Book> SearchComicInfo(string id)
+        [HttpGet("getinfo/{isbn}")]
+        public ActionResult<Book> SearchComicInfo(string isbn)
         {
-            var book = _bookService.Get(id);
+            Log.Here().Information("Searching for book with isbn: {Isbn}", isbn);
+            var book = _bookService.SearchComicInfoAndUpdate(isbn);
             if (book == null)
             {
                 return NotFound();
             }
 
-            book = _bookService.SearchComicInfoAndUpdate(book);
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            return _bookService.Get(id);
+            return book;
         }
 
         [HttpPost]
