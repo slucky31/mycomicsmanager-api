@@ -19,7 +19,8 @@ public class GoogleBooksApiDataService
 
     public async Task<BookInformation> GetBookInformation(string isbn)
     {
-        var response = await _httpClient.GetStringAsync($"{_requestUri}/volumes?q=isbn:{isbn}");
+        var cleanIsbn = isbn.Replace("-", "").Replace(" ", "");
+        var response = await _httpClient.GetStringAsync($"{_requestUri}/volumes?q=isbn:{cleanIsbn}");
         var bookInformation = JsonSerializer.Deserialize<BookInformation>(response);
         return bookInformation;
     }
