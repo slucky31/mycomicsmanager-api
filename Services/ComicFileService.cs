@@ -215,11 +215,51 @@ namespace MyComicsManagerApi.Services
             }
             
             // Conversion des fichiers en WebP
+            //ConvertImagesToWebP(archiveDirectoryPath);
+
+            if (comic.EbookPath != null)
+            {
+                // Création de l'archive à partir du répertoire
+                // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
+                // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
+                
+                var filesToArchive = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
+                    .Where(file =>
+                        _extensionsFileArchive.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
+                Log.Here().Information("Archivages des {NbFiles} fichiers", filesToArchive.Count);
+                
+                // Construction de l'archive
+                using var archive = ZipFile.Open(comic.EbookPath, ZipArchiveMode.Create);
+                foreach (var file in filesToArchive)
+                {
+                    var entry = archive.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
+                    Log.Here().Debug("{FullName} was compressed", entry.FullName);
+                }
+            }
+
+            // Suppression du dossier temporaire
+            try
+            {
+                Directory.Delete(tempDir, true);
+                Log.Here().Information("Suppression du dossier temporaire");
+            }
+            catch (Exception e)
+            {
+                Log.Here().Error(e, "La suppression du répertoire temporaire a échoué");
+            }
+
+            // Mise à jour de l'objet Comic avec le nouveau fichier CBZ et le nouveau chemin
+            comic.EbookName = Path.GetFileName(comic.EbookPath);
+        }
+
+        private void ConvertImagesToWebP(string archiveDirectoryPath)
+        {
             var filesToConvert = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
                 .Where(file =>
                     _extensionsImageArchiveWithoutWebp.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
-            Log.Here().Information("Conversion des {NbFiles} images en WebP et resize à {Width} pixels de large", filesToConvert.Count, ResizedWidth);
-            
+            Log.Here().Information("Conversion des {NbFiles} images en WebP et resize à {Width} pixels de large",
+                filesToConvert.Count, ResizedWidth);
+
             var opts = new ParallelOptions
             {
                 // 75% (rounded up) of the processor count
@@ -256,40 +296,6 @@ namespace MyComicsManagerApi.Services
                 // Suppression du fichier original
                 File.Delete(file);
             });
-
-            if (comic.EbookPath != null)
-            {
-                // Création de l'archive à partir du répertoire
-                // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
-                // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
-                
-                var filesToArchive = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
-                    .Where(file =>
-                        _extensionsFileArchive.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
-                Log.Here().Information("Archivages des {NbFiles} fichiers", filesToArchive.Count);
-                
-                // Construction de l'archive
-                using var archive = ZipFile.Open(comic.EbookPath, ZipArchiveMode.Create);
-                foreach (var file in filesToArchive)
-                {
-                    var entry = archive.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
-                    Log.Here().Debug("{FullName} was compressed", entry.FullName);
-                }
-            }
-
-            // Suppression du dossier temporaire
-            try
-            {
-                Directory.Delete(tempDir, true);
-                Log.Here().Information("Suppression du dossier temporaire");
-            }
-            catch (Exception e)
-            {
-                Log.Here().Error(e, "La suppression du répertoire temporaire a échoué");
-            }
-
-            // Mise à jour de l'objet Comic avec le nouveau fichier CBZ et le nouveau chemin
-            comic.EbookName = Path.GetFileName(comic.EbookPath);
         }
 
         private void ExtractImagesFromCbz(string comicEbookPath, string tempDir)
