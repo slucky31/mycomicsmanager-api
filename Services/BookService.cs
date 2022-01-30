@@ -13,13 +13,15 @@ namespace MyComicsManagerApi.Services
         private static ILogger Log => Serilog.Log.ForContext<BookService>();
         
         private readonly IMongoCollection<Book> _books;
+        private readonly GoogleBooksApiDataService _googleBooksApiDataService;
         
-        public BookService(IDatabaseSettings dbSettings)
+        public BookService(IDatabaseSettings dbSettings, GoogleBooksApiDataService googleBooksApiDataService)
         {
             Log.Here().Debug("settings = {@Settings}", dbSettings);
             var client = new MongoClient(dbSettings.ConnectionString);
             var database = client.GetDatabase(dbSettings.DatabaseName);
             _books = database.GetCollection<Book>(dbSettings.BooksCollectionName);
+            _googleBooksApiDataService = googleBooksApiDataService;
         }
 
         public List<Book> Get() =>
@@ -57,25 +59,34 @@ namespace MyComicsManagerApi.Services
             var parser = new BdphileComicHtmlDataParser();
             var results = parser.Parse(isbn);
 
-            if (results.Count == 0)
+            if (results.Count == 1)
             {
-                return null;
-            }
+                book.Isbn = results[ComicDataEnum.ISBN];
+                book.Serie = results[ComicDataEnum.SERIE];
+                book.Title = results[ComicDataEnum.TITRE];
+                var frCulture = new CultureInfo("fr-FR");
             
-            book.Isbn = results[ComicDataEnum.ISBN];
-            book.Serie = results[ComicDataEnum.SERIE];
-            book.Title = results[ComicDataEnum.TITRE];
-            var frCulture = new CultureInfo("fr-FR");
-            
-            if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
-            {
-                book.Volume = intValue;
+                if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
+                {
+                    book.Volume = intValue;
+                }
+                else
+                {
+                    Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
+                        results[ComicDataEnum.TOME]);
+                }
             }
             else
             {
-                Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
-                    results[ComicDataEnum.TOME]);
+                var bookInfo = _googleBooksApiDataService.GetBookInformation(isbn);
+                if (bookInfo.Result != null && bookInfo.Result.Items.Count > 0)
+                {
+                    book.Isbn = isbn;
+                    book.Title = bookInfo.Result.Items[0].VolumeInfo.Title;
+                }
             }
+            
+            
             
             Update(book.Id, book);
             return book;
