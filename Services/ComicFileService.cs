@@ -212,10 +212,7 @@ namespace MyComicsManagerApi.Services
             {
                 Log.Here().Debug("Suppression du fichier {File}", file);
                 File.Delete(file);
-            }
-            
-            // Conversion des fichiers en WebP
-            //ConvertImagesToWebP(archiveDirectoryPath);
+            }                       
 
             if (comic.EbookPath != null)
             {
