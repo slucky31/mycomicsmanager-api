@@ -72,7 +72,7 @@ namespace MyComicsManagerApi.Services
                 }
                 else
                 {
-                    Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
+                    Log.Here().Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
                         results[ComicDataEnum.TOME]);
                 }
             }
@@ -85,7 +85,6 @@ namespace MyComicsManagerApi.Services
                     book.Title = bookInfo.Result.Items[0].VolumeInfo.Title;
                 }
             }
-            
             
             
             Update(book.Id, book);

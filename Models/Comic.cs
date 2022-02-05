@@ -58,6 +58,8 @@ namespace MyComicsManagerApi.Models
         public int PageCount { get; set; }
 
         public double Review { get; set; }
+
+        public bool WebPFormated { get; set; } = false;
         
         public List<ComicReview> ComicReviews { get; set; }
 
@@ -65,7 +67,7 @@ namespace MyComicsManagerApi.Models
 
         public override string ToString()
         {
-            return "Comic : " + Serie.Replace(Environment.NewLine, "") + " - " + Title.Replace(Environment.NewLine, "") + " - " + Volume + " - " + EbookPath.Replace(Environment.NewLine, "");
+            return "Comic : " + Serie?.Replace(Environment.NewLine, "") + " - " + Title?.Replace(Environment.NewLine, "") + " - " + Volume + " - " + EbookPath?.Replace(Environment.NewLine, "");
         }
 
     }

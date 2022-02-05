@@ -3,6 +3,7 @@ using MyComicsManagerApi.Models;
 using MyComicsManagerApi.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Hangfire;
 
 namespace MyComicsManagerApi.Controllers
 {
@@ -11,6 +12,7 @@ namespace MyComicsManagerApi.Controllers
     public class ComicsController : ControllerBase
     {
         private readonly ComicService _comicService;
+        // TODO : ne devrait pas être utilisé mais encapsulé dans le service ComicService
         private readonly ComicFileService _comicFileService;
 
         public ComicsController(ComicService comicService, ComicFileService comicFileService)
@@ -165,6 +167,21 @@ namespace MyComicsManagerApi.Controllers
             {
                 return _comicFileService.ExtractLastImages(comic, nbImagesToExtract);
             }
+            
+        }
+        
+        [HttpPost("{id:length(24)}/convertImagesToWebP")]
+        public ActionResult<Comic> ConvertImagesToWebP(string id)
+        {
+            var comic = _comicService.Get(id);
+            if (comic == null)
+            {
+                return NotFound();
+            }
+            
+            var jobId = BackgroundJob.Enqueue(() => _comicService.ConvertImagesToWebP(comic));
+
+            return Ok();
             
         }
 
