@@ -321,13 +321,13 @@ namespace MyComicsManagerApi.Services
             });
             
             // Renommage de l'archive pour pouvoir construire la nouvelle archive
-            var dest = Path.ChangeExtension(zipPath, ".old");
+            var destBackUp = Path.ChangeExtension(zipPath, ".old");
             if (File.Exists(zipPath))
             {
-                File.Delete(dest);
+                File.Delete(destBackUp);
             }
-            Log.Here().Information("Renommage du fichier origine {File} en {Dest}", comic.EbookPath, dest);
-            File.Move(zipPath,  dest);
+            Log.Here().Information("Renommage du fichier origine {File} en {Dest}", comic.EbookPath, destBackUp);
+            File.Move(zipPath,  destBackUp);
             
             // Création de l'archive à partir du répertoire
             // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
@@ -345,6 +345,9 @@ namespace MyComicsManagerApi.Services
                 var entry = archive.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
                 Log.Here().Debug("{FullName} was compressed", entry.FullName);
             }
+            
+            // Suppression de l'archive backup
+            File.Delete(destBackUp);
             
         }
 

@@ -6,6 +6,7 @@ using System.IO;
 using System;
 using System.Globalization;
 using System.Linq;
+using MongoDB.Bson;
 using MyComicsManagerApi.DataParser;
 using MyComicsManagerApi.Exceptions;
 using MyComicsManagerApi.Utils;
@@ -30,6 +31,7 @@ namespace MyComicsManagerApi.Services
             _comics = database.GetCollection<Comic>(settings.ComicsCollectionName);
             _libraryService = libraryService;
             _comicFileService = comicFileService;
+            
         }
 
         public List<Comic> Get() =>
@@ -154,7 +156,18 @@ namespace MyComicsManagerApi.Services
             // Mise à jour en base de données
             _comics.ReplaceOne(c => c.Id == id, comic);
         }
-
+        
+        public List<Comic> Find(string item, int limit)
+        {
+            var filterTitle = Builders<Comic>.Filter.Regex(x => x.Title, new BsonRegularExpression(item, "i"));
+            var filterSerie = Builders<Comic>.Filter.Regex(x => x.Serie, new BsonRegularExpression(item, "i"));
+            var filter = filterTitle|filterSerie;
+            
+            var list = _comics.Find(filter).ToList();
+            return list.OrderBy(x => x.Serie).ThenBy(x => x.Title)
+                .Take(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
+        }
+        
         private void UpdateDirectoryAndFileName(Comic comic)
         {
             // Mise à jour du nom du fichier

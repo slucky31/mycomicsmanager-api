@@ -36,6 +36,10 @@ namespace MyComicsManagerApi.Controllers
         [HttpGet("orderBy/lastAdded/limit/{limit:int}")]
         public ActionResult<List<Comic>> ListComicsOrderByLastAddedLimitBy(int limit) =>
             _comicService.GetOrderByLastAddedLimitBy(limit);
+        
+        [HttpGet("find/{item}/limit/{limit:int}")]
+        public ActionResult<List<Comic>> FindBySerieOrTitle(string item, int limit) =>
+            _comicService.Find(item, limit);
 
         [HttpGet("{id:length(24)}", Name = "GetComic")]
         public ActionResult<Comic> Get(string id)
