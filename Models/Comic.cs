@@ -59,7 +59,7 @@ namespace MyComicsManagerApi.Models
 
         public double Review { get; set; }
 
-        public bool WebPFormated { get; set; } = false;
+        public bool WebPFormated { get; set; }
         
         public List<ComicReview> ComicReviews { get; set; }
 

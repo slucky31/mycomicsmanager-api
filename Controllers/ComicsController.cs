@@ -183,8 +183,9 @@ namespace MyComicsManagerApi.Controllers
                 return NotFound();
             }
             
-            var jobId = BackgroundJob.Enqueue(() => _comicService.ConvertImagesToWebP(comic));
-
+            BackgroundJob.Enqueue(() => _comicService.ConvertImagesToWebP(comic));
+            
+            // TODO : gérer le retour 202 et la méthode de vérification
             return Ok();
             
         }

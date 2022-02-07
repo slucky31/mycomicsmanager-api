@@ -334,7 +334,10 @@ namespace MyComicsManagerApi.Services
         {
             try
             {
-                if (comic.WebPFormated) return;
+                if (comic.WebPFormated)
+                {
+                    return;
+                }
                 _comicFileService.ConvertImagesToWebP(comic);
                 comic.WebPFormated = true;
                 this.Update(comic.Id, comic);
@@ -342,7 +345,6 @@ namespace MyComicsManagerApi.Services
             catch (Exception e)
             {
                 Log.Here().Warning("La conversion des images en WebP a échoué : {Exception}", e.Message);
-                return;
             }
         }
 

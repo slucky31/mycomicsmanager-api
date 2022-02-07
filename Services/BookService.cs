@@ -66,8 +66,7 @@ namespace MyComicsManagerApi.Services
                 book.Isbn = results[ComicDataEnum.ISBN];
                 book.Serie = results[ComicDataEnum.SERIE];
                 book.Title = results[ComicDataEnum.TITRE];
-                var frCulture = new CultureInfo("fr-FR");
-            
+
                 if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
                 {
                     book.Volume = intValue;
