@@ -249,9 +249,35 @@ namespace MyComicsManagerApi.Services
             comic.EbookName = Path.GetFileName(comic.EbookPath);
         }
 
-        private void ConvertImagesToWebP(string archiveDirectoryPath)
+        public void ConvertImagesToWebP(Comic comic)
         {
-            var filesToConvert = Directory.EnumerateFiles(archiveDirectoryPath, "*.*", SearchOption.AllDirectories)
+            if (comic.EbookPath == null)
+            {
+                Log.Here().Warning("Il n'y a pas d'archive à convertir");
+                throw new ComicIoException("Erreur lors de l'extraction de l'archive. Consulter le répertoire errors.");
+            }
+            
+            var zipPath = GetComicEbookPath(comic, LibraryService.PathType.ABSOLUTE_PATH);
+            if (!File.Exists(zipPath))
+            {
+                Log.Here().Warning("L'archive n'existe pas");
+                throw new ComicIoException("Erreur lors de l'extraction de l'archive. Consulter le répertoire errors.");
+            }
+            
+            var tempDir = CreateTempDirectory();
+            Log.Here().Information("ExtractImagesFromCbz");
+            try
+            {
+                ExtractImagesFromCbz(zipPath, tempDir);
+            }
+            catch (Exception)
+            {
+                Log.Here().Error("Erreur lors de l'extraction des images à partir du fichier CBZ {File}",
+                    comic.EbookPath);
+                throw;
+            }
+            
+            var filesToConvert = Directory.EnumerateFiles(tempDir, "*.*", SearchOption.AllDirectories)
                 .Where(file =>
                     _extensionsImageArchiveWithoutWebp.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
             Log.Here().Information("Conversion des {NbFiles} images en WebP et resize à {Width} pixels de large",
@@ -293,6 +319,36 @@ namespace MyComicsManagerApi.Services
                 // Suppression du fichier original
                 File.Delete(file);
             });
+            
+            // Renommage de l'archive pour pouvoir construire la nouvelle archive
+            var destBackUp = Path.ChangeExtension(zipPath, ".old");
+            if (File.Exists(zipPath))
+            {
+                File.Delete(destBackUp);
+            }
+            Log.Here().Information("Renommage du fichier origine {File} en {Dest}", comic.EbookPath, destBackUp);
+            File.Move(zipPath,  destBackUp);
+            
+            // Création de l'archive à partir du répertoire
+            // https://khalidabuhakmeh.com/create-a-zip-file-with-dotnet-5
+            // https://stackoverflow.com/questions/163162/can-you-call-directory-getfiles-with-multiple-filters
+            
+            var filesToArchive = Directory.EnumerateFiles(tempDir, "*.*", SearchOption.AllDirectories)
+                .Where(file =>
+                    _extensionsFileArchive.Any(x => file.EndsWith(x, StringComparison.OrdinalIgnoreCase))).ToList();
+            Log.Here().Information("Archivages des {NbFiles} fichiers", filesToArchive.Count);
+            
+            // Construction de l'archive
+            using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+            foreach (var file in filesToArchive)
+            {
+                var entry = archive.CreateEntryFromFile(file, Path.GetFileName(file), CompressionLevel.Optimal);
+                Log.Here().Debug("{FullName} was compressed", entry.FullName);
+            }
+            
+            // Suppression de l'archive backup
+            File.Delete(destBackUp);
+            
         }
 
         private void ExtractImagesFromCbz(string comicEbookPath, string tempDir)

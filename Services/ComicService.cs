@@ -6,6 +6,7 @@ using System.IO;
 using System;
 using System.Globalization;
 using System.Linq;
+using MongoDB.Bson;
 using MyComicsManagerApi.DataParser;
 using MyComicsManagerApi.Exceptions;
 using MyComicsManagerApi.Utils;
@@ -30,6 +31,7 @@ namespace MyComicsManagerApi.Services
             _comics = database.GetCollection<Comic>(settings.ComicsCollectionName);
             _libraryService = libraryService;
             _comicFileService = comicFileService;
+            
         }
 
         public List<Comic> Get() =>
@@ -86,10 +88,10 @@ namespace MyComicsManagerApi.Services
             // Gestion du cas où le fichier uploadé existe déjà dans la lib
             while (File.Exists(destination))
             {
-                Log.Warning("Le fichier {File} existe déjà", destination);
+                Log.Here().Warning("Le fichier {File} existe déjà", destination);
                 comic.Title = Path.GetFileNameWithoutExtension(destination) + "-Rename";
                 comic.EbookName = comic.Title + Path.GetExtension(destination);
-                Log.Warning("Il va être renommé en {FileName}", comic.EbookName);
+                Log.Here().Warning("Il va être renommé en {FileName}", comic.EbookName);
                 destination = _libraryService.GetLibraryPath(comic.LibraryId, LibraryService.PathType.ABSOLUTE_PATH) +
                               comic.EbookName;
             }
@@ -154,7 +156,18 @@ namespace MyComicsManagerApi.Services
             // Mise à jour en base de données
             _comics.ReplaceOne(c => c.Id == id, comic);
         }
-
+        
+        public List<Comic> Find(string item, int limit)
+        {
+            var filterTitle = Builders<Comic>.Filter.Regex(x => x.Title, new BsonRegularExpression(item, "i"));
+            var filterSerie = Builders<Comic>.Filter.Regex(x => x.Serie, new BsonRegularExpression(item, "i"));
+            var filter = filterTitle|filterSerie;
+            
+            var list = _comics.Find(filter).ToList();
+            return list.OrderBy(x => x.Serie).ThenBy(x => x.Title)
+                .Take(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
+        }
+        
         private void UpdateDirectoryAndFileName(Comic comic)
         {
             // Mise à jour du nom du fichier
@@ -284,7 +297,7 @@ namespace MyComicsManagerApi.Services
             }
             else
             {
-                Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
+                Log.Here().Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
                     results[ComicDataEnum.TOME]);
             }
 
@@ -296,7 +309,7 @@ namespace MyComicsManagerApi.Services
             }
             else
             {
-                Log.Warning("Une erreur est apparue lors de l'analyse de la note : {Note}",
+                Log.Here().Warning("Une erreur est apparue lors de l'analyse de la note : {Note}",
                     results[ComicDataEnum.NOTE]);
                 comic.Review = -1;
             }
@@ -308,13 +321,31 @@ namespace MyComicsManagerApi.Services
             }
             else
             {
-                Log.Warning("Une erreur est apparue lors de l'analyse du prix : {Prix}",
+                Log.Here().Warning("Une erreur est apparue lors de l'analyse du prix : {Prix}",
                     results[ComicDataEnum.PRIX]);
                 comic.Review = -1;
             }
 
             Update(comic.Id, comic);
             return comic;
+        }
+
+        public void ConvertImagesToWebP(Comic comic)
+        {
+            try
+            {
+                if (comic.WebPFormated)
+                {
+                    return;
+                }
+                _comicFileService.ConvertImagesToWebP(comic);
+                comic.WebPFormated = true;
+                this.Update(comic.Id, comic);
+            }
+            catch (Exception e)
+            {
+                Log.Here().Warning("La conversion des images en WebP a échoué : {Exception}", e.Message);
+            }
         }
 
         private void MoveComic(string origin, string destination)

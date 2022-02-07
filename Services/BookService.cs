@@ -47,6 +47,8 @@ namespace MyComicsManagerApi.Services
             _books.DeleteOne(book => book.Id == bookIn.Id);
         }
         
+        
+        
         public Book SearchComicInfoAndUpdate(string isbn)
         {
             if (string.IsNullOrEmpty(isbn))
@@ -64,15 +66,14 @@ namespace MyComicsManagerApi.Services
                 book.Isbn = results[ComicDataEnum.ISBN];
                 book.Serie = results[ComicDataEnum.SERIE];
                 book.Title = results[ComicDataEnum.TITRE];
-                var frCulture = new CultureInfo("fr-FR");
-            
+
                 if (int.TryParse(results[ComicDataEnum.TOME], out var intValue))
                 {
                     book.Volume = intValue;
                 }
                 else
                 {
-                    Log.Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
+                    Log.Here().Warning("Une erreur est apparue lors de l'analyse du volume : {Tome}",
                         results[ComicDataEnum.TOME]);
                 }
             }
@@ -85,7 +86,6 @@ namespace MyComicsManagerApi.Services
                     book.Title = bookInfo.Result.Items[0].VolumeInfo.Title;
                 }
             }
-            
             
             
             Update(book.Id, book);
