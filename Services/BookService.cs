@@ -1,7 +1,6 @@
 using MyComicsManagerApi.Models;
 using MongoDB.Driver;
 using System.Collections.Generic;
-using System.Globalization;
 using MyComicsManagerApi.DataParser;
 using MyComicsManagerApi.Utils;
 using Serilog;
@@ -13,15 +12,13 @@ namespace MyComicsManagerApi.Services
         private static ILogger Log => Serilog.Log.ForContext<BookService>();
         
         private readonly IMongoCollection<Book> _books;
-        private readonly GoogleBooksApiDataService _googleBooksApiDataService;
-        
-        public BookService(IDatabaseSettings dbSettings, GoogleBooksApiDataService googleBooksApiDataService)
+
+        public BookService(IDatabaseSettings dbSettings)
         {
             Log.Here().Debug("settings = {@Settings}", dbSettings);
             var client = new MongoClient(dbSettings.ConnectionString);
             var database = client.GetDatabase(dbSettings.DatabaseName);
             _books = database.GetCollection<Book>(dbSettings.BooksCollectionName);
-            _googleBooksApiDataService = googleBooksApiDataService;
         }
 
         public List<Book> Get() =>
@@ -79,14 +76,8 @@ namespace MyComicsManagerApi.Services
             }
             else
             {
-                var bookInfo = _googleBooksApiDataService.GetBookInformation(isbn);
-                if (bookInfo.Result != null && bookInfo.Result.Items.Count > 0)
-                {
-                    book.Isbn = isbn;
-                    book.Title = bookInfo.Result.Items[0].VolumeInfo.Title;
-                }
+                return null;
             }
-            
             
             Update(book.Id, book);
             return book;
