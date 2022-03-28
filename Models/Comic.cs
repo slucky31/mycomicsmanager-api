@@ -22,6 +22,8 @@ namespace MyComicsManagerApi.Models
         public string LibraryId { get; set; }
 
         public string CoverPath { get; set; }
+        
+        public CoverType CoverType { get; set; }
 
         // Book info
 
@@ -76,5 +78,12 @@ namespace MyComicsManagerApi.Models
     {
         public DateTime? Reviewed { get; set; }
         public int Note { get; set; }
+    }
+
+    public enum CoverType
+    {
+        PORTRAIT,
+        LANDSCAPE_LEFT,
+        LANDSCAPE_RIGHT
     }
 }

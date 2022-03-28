@@ -131,6 +131,7 @@ namespace MyComicsManagerApi.Services
             _comicFileService.SetNumberOfImagesInCbz(comic);
 
             // Insertion en base de données
+            comic.CoverType = CoverType.PORTRAIT;
             comic.Added = DateTime.Now;
             comic.Edited = comic.Added;
             _comics.InsertOne(comic);

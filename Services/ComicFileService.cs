@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -129,8 +130,33 @@ namespace MyComicsManagerApi.Services
 
                 entry.ExtractToFile(destinationPath);
                 // TODO : Créer une image plus petite
-            }
 
+                // Resize de l'image
+                using var image = Image.Load(destinationPath, out _);
+                Rectangle rectangle;
+                switch (comic.CoverType)
+                {
+                    case CoverType.LANDSCAPE_LEFT:
+                        rectangle = new Rectangle(0, 0, image.Width / 2, image.Height);
+                        image.Mutate(context => context.Crop(rectangle));
+                        image.Save(destinationPath);
+                        break;
+                    case CoverType.LANDSCAPE_RIGHT:
+                        rectangle = new Rectangle(image.Width / 2, 0, image.Width / 2, image.Height);
+                        image.Mutate(context => context.Crop(rectangle));
+                        image.Save(destinationPath);
+                        break;
+                    case CoverType.PORTRAIT:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                
+            }
+            else
+            {
+                throw new SecurityException("Destination path is not within the extraction path.");
+            }
             return destinationPath;
         }
 
