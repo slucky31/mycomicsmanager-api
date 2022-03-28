@@ -2,6 +2,8 @@ using MyComicsManagerApi.Models;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 using MyComicsManagerApi.Utils;
 using Serilog;
 
@@ -100,6 +102,21 @@ namespace MyComicsManagerApi.Services
         {
             Directory.CreateDirectory(_libSettings.CoversDirRootPath.TrimEnd(_charsToTrim));
             return _libSettings.CoversDirRootPath.TrimEnd(_charsToTrim) + Path.DirectorySeparatorChar;
+        }
+        
+        public List<FileInfo> GetUploadedFiles()
+        {
+            var fileUploadDirRootPath = GetFileUploadDirRootPath();
+            string[] extensions = { "*.cbr", "*.cbz", "*.pdf", "*.zip", "*.rar" };
+            
+            Log.Information("Recherche des fichiers dans {Path}", fileUploadDirRootPath);
+            
+            // Création du répertoire si il n'existe pas
+            Directory.CreateDirectory(fileUploadDirRootPath);
+
+            // Lister les fichiers
+            var directory = new DirectoryInfo(fileUploadDirRootPath);        
+            return extensions.AsParallel().SelectMany(searchPattern  => directory.EnumerateFiles(searchPattern, SearchOption.AllDirectories)).ToList();
         }
 
     }

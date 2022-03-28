@@ -78,8 +78,6 @@ namespace MyComicsManagerApi
             services.AddSingleton<ComicFileService>();
             services.AddSingleton<BookService>();
             services.AddSingleton<ComputerVisionService>();
-            services.AddSingleton<HttpClient>();
-            services.AddSingleton<GoogleBooksApiDataService>();
 
             services.AddControllers().AddNewtonsoftJson(options => options.UseMemberCasing());
 

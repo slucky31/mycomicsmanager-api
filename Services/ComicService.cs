@@ -36,11 +36,17 @@ namespace MyComicsManagerApi.Services
 
         public List<Comic> Get() =>
             _comics.Find(comic => true).ToList();
-
+        
         public List<Comic> GetOrderByLastAddedLimitBy(int limit) =>
             _comics.Find(comic => true).SortByDescending(comic => comic.Added)
                 .Limit(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
 
+        public List<Comic> GetOrderBySerieAndTome(int limit) =>
+                    _comics.Find(comic => true)
+                        .SortBy(comic => comic.Serie)
+                        .ThenBy(comic => comic.Volume)
+                        .Limit(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
+        
         public List<Comic> GetWithoutIsbnLimitBy(int limit) =>
             _comics.Find(comic => string.IsNullOrEmpty(comic.Isbn)).SortBy(comic => comic.Added)
                 .Limit(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
@@ -51,8 +57,7 @@ namespace MyComicsManagerApi.Services
             return list.OrderBy(_ => Guid.NewGuid())
                 .Take(limit < MaxComicsPerRequest ? limit : MaxComicsPerRequest).ToList();
         }
-
-
+        
         public Comic Get(string id) =>
             _comics.Find(comic => comic.Id == id).FirstOrDefault();
 
@@ -361,5 +366,7 @@ namespace MyComicsManagerApi.Services
                 throw new ComicIoException("Erreur lors du déplacement du fichier. Consulter le répertoire errors.", e);
             }
         }
+        
+
     }
 }

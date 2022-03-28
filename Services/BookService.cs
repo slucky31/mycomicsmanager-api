@@ -1,7 +1,6 @@
 using MyComicsManagerApi.Models;
 using MongoDB.Driver;
 using System.Collections.Generic;
-using System.Globalization;
 using MyComicsManagerApi.DataParser;
 using MyComicsManagerApi.Utils;
 using Serilog;
@@ -13,19 +12,17 @@ namespace MyComicsManagerApi.Services
         private static ILogger Log => Serilog.Log.ForContext<BookService>();
         
         private readonly IMongoCollection<Book> _books;
-        private readonly GoogleBooksApiDataService _googleBooksApiDataService;
-        
-        public BookService(IDatabaseSettings dbSettings, GoogleBooksApiDataService googleBooksApiDataService)
+
+        public BookService(IDatabaseSettings dbSettings)
         {
             Log.Here().Debug("settings = {@Settings}", dbSettings);
             var client = new MongoClient(dbSettings.ConnectionString);
             var database = client.GetDatabase(dbSettings.DatabaseName);
             _books = database.GetCollection<Book>(dbSettings.BooksCollectionName);
-            _googleBooksApiDataService = googleBooksApiDataService;
         }
 
         public List<Book> Get() =>
-            _books.Find(book => true).ToList();
+            _books.Find(book => true).SortByDescending(book => book.Added).ToList();
 
         public Book Get(string id) =>
             _books.Find(book => book.Id == id).FirstOrDefault();
@@ -47,8 +44,6 @@ namespace MyComicsManagerApi.Services
             _books.DeleteOne(book => book.Id == bookIn.Id);
         }
         
-        
-        
         public Book SearchComicInfoAndUpdate(string isbn)
         {
             if (string.IsNullOrEmpty(isbn))
@@ -61,8 +56,10 @@ namespace MyComicsManagerApi.Services
             var parser = new BdphileComicHtmlDataParser();
             var results = parser.Parse(isbn);
 
-            if (results.Count == 1)
+            if (results.Count > 0)
             {
+                // Récupération des informations du comic
+                // TODO : que se passe t'il si la clé n'existe pas dans results ?
                 book.Isbn = results[ComicDataEnum.ISBN];
                 book.Serie = results[ComicDataEnum.SERIE];
                 book.Title = results[ComicDataEnum.TITRE];
@@ -79,14 +76,8 @@ namespace MyComicsManagerApi.Services
             }
             else
             {
-                var bookInfo = _googleBooksApiDataService.GetBookInformation(isbn);
-                if (bookInfo.Result != null && bookInfo.Result.Items.Count > 0)
-                {
-                    book.Isbn = isbn;
-                    book.Title = bookInfo.Result.Items[0].VolumeInfo.Title;
-                }
+                book.Isbn = isbn;
             }
-            
             
             Update(book.Id, book);
             return book;
