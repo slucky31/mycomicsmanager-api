@@ -37,6 +37,10 @@ namespace MyComicsManagerApi.Controllers
         public ActionResult<List<Comic>> ListComicsOrderByLastAddedLimitBy(int limit) =>
             _comicService.GetOrderByLastAddedLimitBy(limit);
         
+        [HttpGet("orderBy/serie/limit/{limit:int}")]
+        public ActionResult<List<Comic>> ListComicsOrderBySerieLimitBy(int limit) =>
+            _comicService.GetOrderBySerieAndTome(limit);
+        
         [HttpGet("find/{item}/limit/{limit:int}")]
         public ActionResult<List<Comic>> FindBySerieOrTitle(string item, int limit) =>
             _comicService.Find(item, limit);
@@ -163,14 +167,7 @@ namespace MyComicsManagerApi.Controllers
             }
 
             // TODO : check index image < nb images
-
-            if (first)
-            {
-                return _comicFileService.ExtractFirstImages(comic, nbImagesToExtract);
-            } else
-            {
-                return _comicFileService.ExtractLastImages(comic, nbImagesToExtract);
-            }
+            return first ? _comicFileService.ExtractFirstImages(comic, nbImagesToExtract) : _comicFileService.ExtractLastImages(comic, nbImagesToExtract);
             
         }
         
