@@ -44,8 +44,6 @@ namespace MyComicsManagerApi.Services
             _books.DeleteOne(book => book.Id == bookIn.Id);
         }
         
-        
-        
         public Book SearchComicInfoAndUpdate(string isbn)
         {
             if (string.IsNullOrEmpty(isbn))
@@ -58,8 +56,10 @@ namespace MyComicsManagerApi.Services
             var parser = new BdphileComicHtmlDataParser();
             var results = parser.Parse(isbn);
 
-            if (results.Count == 1)
+            if (results.Count > 0)
             {
+                // Récupération des informations du comic
+                // TODO : que se passe t'il si la clé n'existe pas dans results ?
                 book.Isbn = results[ComicDataEnum.ISBN];
                 book.Serie = results[ComicDataEnum.SERIE];
                 book.Title = results[ComicDataEnum.TITRE];
@@ -76,7 +76,7 @@ namespace MyComicsManagerApi.Services
             }
             else
             {
-                return null;
+                book.Isbn = isbn;
             }
             
             Update(book.Id, book);

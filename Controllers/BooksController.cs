@@ -39,10 +39,6 @@ namespace MyComicsManagerApi.Controllers
         public ActionResult<Book> SearchComicInfo(string isbn)
         {
             var book = _bookService.SearchComicInfoAndUpdate(isbn);
-            if (book == null)
-            {
-                return NotFound();
-            }
 
             return book;
         }
