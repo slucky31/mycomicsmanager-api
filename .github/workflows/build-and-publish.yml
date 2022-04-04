@@ -1,0 +1,75 @@
+name: .NET Core
+
+on:
+  push:
+    branches: [ develop, feature/* ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - 
+                name : Checkout
+                uses: actions/checkout@v2
+                with:
+                    fetch-depth: 0
+            - 
+                name: Setup .NET Core
+                uses: actions/setup-dotnet@v1
+                with:
+                    dotnet-version: 6.0.x
+            - 
+                name: MyComicsManagerApi Install dependencies
+                run: dotnet restore "./MyComicsManagerApi.csproj"
+            - 
+                name: MyComicsManagerApi Build
+                run: dotnet build "./MyComicsManagerApi.csproj" --configuration Release --no-restore
+            - 
+                name: MyComicsManagerApi.Tests Install dependencies
+                run: dotnet restore ".\MyComicsManagerApi.Tests\MyComicsManagerApiTests.csproj"
+            - 
+                name: MyComicsManagerApi Test
+                run: dotnet test ".\MyComicsManagerApi.Tests\MyComicsManagerApiTests.csproj" --no-restore --verbosity normal
+
+    build-and-push-image:
+        needs: build
+        if: ${{ (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/develop') }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write        
+        steps:
+            -
+                name : Checkout
+                uses: actions/checkout@v3
+
+            - 
+                name: Log in to the Container registry
+                uses: docker/login-action@v1
+                with:
+                    registry: ${{ env.REGISTRY }}
+                    username: ${{ github.actor }}
+                    password: ${{ secrets.GITHUB_TOKEN }}
+
+            - 
+                name: Extract metadata (tags, labels) for Docker
+                id: meta
+                uses: docker/metadata-action@v3
+                with:
+                    images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+            - 
+                name: Build and push Docker image
+                uses: docker/build-push-action@v2
+                with:
+                    context: .
+                    file: ./Dockerfile
+                    push: true
+                    tags: ${{ steps.meta.outputs.tags }}
+                    labels: ${{ steps.meta.outputs.labels }}
