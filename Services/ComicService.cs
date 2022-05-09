@@ -353,6 +353,41 @@ namespace MyComicsManagerApi.Services
                 Log.Here().Warning("La conversion des images en WebP a échoué : {Exception}", e.Message);
             }
         }
+        
+        private long CountComicsRequest(FilterDefinition<Comic> filter)
+        {
+            return _comics.CountDocuments(filter);
+        }
+        
+        public long CountComics()
+        {
+            var filter = Builders<Comic>.Filter.Where(comic => true);
+            return CountComicsRequest(filter);
+        }
+        
+        public long CountComicsWithoutSerie()
+        {
+            var filter = Builders<Comic>.Filter.Where(comic => comic.Serie != null);
+            return CountComicsRequest(filter);
+        }
+        
+        public long CountComicsWithoutIsbn()
+        {
+            var filter = Builders<Comic>.Filter.Where(comic => comic.Isbn != null);
+            return CountComicsRequest(filter);
+        }
+        
+        public long CountComicsRead()
+        {
+            var filter = Builders<Comic>.Filter.Where(comic => comic.ComicReviews.Count > 0);
+            return CountComicsRequest(filter);
+        }
+        
+        public long CountComicsUnRead()
+        {
+            var filter = Builders<Comic>.Filter.Where(comic => comic.ComicReviews == null || comic.ComicReviews.Count == 0 );
+            return CountComicsRequest(filter);
+        }
 
         private void MoveComic(string origin, string destination)
         {
